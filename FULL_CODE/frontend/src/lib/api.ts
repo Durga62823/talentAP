@@ -15,7 +15,7 @@ export class ApiError extends Error {
 
 type Opts = { method?: string; body?: unknown; bearer?: string; form?: FormData; signal?: AbortSignal };
 
-const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+const API_BASE = (import.meta.env.API_URL || "").replace(/\/$/, "");
 
 export async function api<T = any>(path: string, opts: Opts = {}): Promise<T> {
   const method = opts.method ?? (opts.body !== undefined || opts.form ? "POST" : "GET");
