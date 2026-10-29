@@ -15,19 +15,27 @@ export class ApiError extends Error {
 
 type Opts = { method?: string; body?: unknown; bearer?: string; form?: FormData; signal?: AbortSignal };
 
-const API_BASE = (import.meta.env.API_URL || "").replace(/\/$/, "");
+export const API_BASE = (
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_BACKEND_URL ||
+  import.meta.env.API_URL ||
+  (typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1"
+    ? "https://talentap-backend.onrender.com"
+    : "")
+).replace(/\/$/, "");
 
 export async function api<T = any>(path: string, opts: Opts = {}): Promise<T> {
   const method = opts.method ?? (opts.body !== undefined || opts.form ? "POST" : "GET");
   const headers: Record<string, string> = {};
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
   if (method !== "GET") headers["X-Sentinel-CSRF"] = "1";
-  if (opts.bearer) headers["Authorization"] = `Bearer ${opts.bearer}`;
+  const token = opts.bearer || (typeof localStorage !== "undefined" ? localStorage.getItem("sm_token") : null);
+  if (token) headers["Authorization"] = `Bearer ${token}`;
   const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
   const res = await fetch(url, {
     method,
     headers,
-    credentials: opts.bearer ? "omit" : "include",
+    credentials: "include",
     body: opts.form ?? (opts.body !== undefined ? JSON.stringify(opts.body) : undefined),
     signal: opts.signal,
   });

@@ -25,8 +25,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const r = await api<{ user: User }>("/api/auth/me");
       setUser(r.user);
     } catch (e) {
-      if (e instanceof ApiError && e.status === 401) setUser(null);
-      else throw e;
+      if (e instanceof ApiError && e.status === 401) {
+        if (typeof localStorage !== "undefined") localStorage.removeItem("sm_token");
+        setUser(null);
+      } else {
+        throw e;
+      }
     } finally {
       setLoading(false);
     }
@@ -37,7 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refresh]);
 
   const login = async (username: string, password: string) => {
-    const r = await api<{ user: User }>("/api/auth/login", { body: { username, password, mode: "cookie" } });
+    const r = await api<{ user: User; token?: string }>("/api/auth/login", { body: { username, password, mode: "cookie" } });
+    if (r.token && typeof localStorage !== "undefined") {
+      localStorage.setItem("sm_token", r.token);
+    }
     qc.clear();
     setUser(r.user);
   };
@@ -46,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await api("/api/auth/logout", { method: "POST" });
     } finally {
+      if (typeof localStorage !== "undefined") localStorage.removeItem("sm_token");
       qc.clear();
       setUser(null);
     }

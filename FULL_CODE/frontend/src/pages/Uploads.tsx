@@ -3,7 +3,7 @@ import { CheckCircle2, FileText, FileUp, Table2, Trash2, UploadCloud } from "luc
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ActionBadge, Alert, Badge, Button, Card, Empty, ErrorText, PageHeader, SensBadge, Spinner, Value } from "../components/ui";
-import { api, fmtBytes, fmtTime } from "../lib/api";
+import { API_BASE, api, fmtBytes, fmtTime } from "../lib/api";
 import { useConnections } from "../lib/connections";
 
 const STATUS_TONE: Record<string, string> = { scanned: "cyan", imported: "green", failed: "red", deleted: "neutral", expired: "neutral", uploaded: "amber" };
@@ -13,7 +13,10 @@ function upload(file: File, onProgress: (p: number) => void): Promise<any> {
   // XHR for upload progress; same CSRF + cookie rules as fetch().
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/uploads");
+    xhr.open("POST", `${API_BASE}/api/uploads`);
+    xhr.withCredentials = true;
+    const token = typeof localStorage !== "undefined" ? localStorage.getItem("sm_token") : null;
+    if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     xhr.setRequestHeader("X-Sentinel-CSRF", "1");
     xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(Math.round((e.loaded / e.total) * 100));
     xhr.onload = () => {
