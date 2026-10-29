@@ -75,12 +75,13 @@ def login(body: LoginIn, request: Request, response: Response, db: Session = Dep
     audit.record(db, p, action="login", outcome="success", correlation_id=corr(request), details={"mode": body.mode})
     out = {"user": _me(p)}
     if body.mode == "cookie":
+        is_prod = get_settings().environment == "production"
         response.set_cookie(
             COOKIE_NAME,
             token,
             httponly=True,
-            samesite="strict",
-            secure=get_settings().environment == "production",
+            samesite="none" if is_prod else "lax",
+            secure=is_prod,
             max_age=get_settings().session_hours * 3600,
             path="/",
         )

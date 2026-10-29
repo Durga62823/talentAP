@@ -15,16 +15,19 @@ export class ApiError extends Error {
 
 type Opts = { method?: string; body?: unknown; bearer?: string; form?: FormData; signal?: AbortSignal };
 
+const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
+
 export async function api<T = any>(path: string, opts: Opts = {}): Promise<T> {
   const method = opts.method ?? (opts.body !== undefined || opts.form ? "POST" : "GET");
   const headers: Record<string, string> = {};
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
   if (method !== "GET") headers["X-Sentinel-CSRF"] = "1";
   if (opts.bearer) headers["Authorization"] = `Bearer ${opts.bearer}`;
-  const res = await fetch(path, {
+  const url = path.startsWith("http") ? path : `${API_BASE}${path}`;
+  const res = await fetch(url, {
     method,
     headers,
-    credentials: opts.bearer ? "omit" : "same-origin",
+    credentials: opts.bearer ? "omit" : "include",
     body: opts.form ?? (opts.body !== undefined ? JSON.stringify(opts.body) : undefined),
     signal: opts.signal,
   });
@@ -53,7 +56,7 @@ export async function apiAllowDenied<T = any>(path: string, opts: Opts = {}): Pr
 
 export function download(path: string) {
   const a = document.createElement("a");
-  a.href = path;
+  a.href = path.startsWith("http") ? path : `${API_BASE}${path}`;
   a.rel = "noopener";
   document.body.appendChild(a);
   a.click();

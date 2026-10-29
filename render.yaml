@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: talentap-backend
+    runtime: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: "pip install -r FULL_CODE/backend/requirements.txt"
+    startCommand: "python -m uvicorn app.main:app --app-dir FULL_CODE/backend --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: SENTINEL_ENV
+        value: production
+      - key: SENTINEL_DATASET_DIR
+        value: Datasets
+      - key: SENTINEL_ALLOWED_DB_HOSTS
+        value: localhost,127.0.0.1
+      - key: SENTINEL_CORS_ORIGINS
+        value: "*"

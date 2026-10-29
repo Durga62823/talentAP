@@ -1,0 +1,10 @@
+username,display_name,role,email
+admin_anita,Anita Rao (Admin),Admin,admin_anita@saffronbank.example
+admin_farhan,Farhan Qureshi (Admin),Admin,admin_farhan@saffronbank.example
+admin_meera,Meera Iyer (Admin),Admin,admin_meera@saffronbank.example
+support_ravi,Ravi Kumar (Support),Support,support_ravi@saffronbank.example
+support_neha,Neha Gill (Support),Support,support_neha@saffronbank.example
+support_joseph,Joseph Pinto (Support),Support,support_joseph@saffronbank.example
+analyst_kavya,Kavya Hegde (Analyst),Analyst,analyst_kavya@saffronbank.example
+analyst_arnab,Arnab Dutta (Analyst),Analyst,analyst_arnab@saffronbank.example
+analyst_hetal,Hetal Shah (Analyst),Analyst,analyst_hetal@saffronbank.example

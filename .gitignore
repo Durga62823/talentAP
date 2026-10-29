@@ -20,13 +20,15 @@
 # ------------------------------------------------------------------------------
 # 2. Datasets, Databases & Local Runtime Storage
 # ------------------------------------------------------------------------------
-# Official hackathon dataset pack (obtain directly from organisers)
-Datasets/
-datasets/
+# Official hackathon dataset pack (sqlite DB + users.csv needed for cloud deployment)
+Datasets/*
+!Datasets/data/
+!Datasets/sql/
+!Datasets/sql/sqlite/
 
 # Runtime state: SQLite targets, meta DBs, temp uploads, generated secrets
-data/
-backups/
+/data/
+/backups/
 
 # Database files & journals
 *.db
@@ -34,6 +36,7 @@ backups/
 *.db-shm
 *.sqlite
 *.sqlite3
+!Datasets/sql/sqlite/saffron_bank.db
 
 # Data tables & SQL dumps (schema files without data stay tracked)
 *.csv
@@ -42,6 +45,8 @@ backups/
 *_data.sql
 *dump*.sql
 *.sql.bak
+Datasets/sql/sqlite/saffron_bank.sql
+!Datasets/data/users.csv
 
 # ------------------------------------------------------------------------------
 # 3. Python Runtime, Caches & Virtual Environments
