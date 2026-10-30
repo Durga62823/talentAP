@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, CheckCircle2, Headphones, LifeBuoy, Search, Shield, UserCheck, Users } from "lucide-react";
+import { ArrowRight, CheckCircle2, Headphones, LifeBuoy, Search, UserCheck, Users } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Badge, Button, Card, Spinner, Stat } from "../../components/ui";
@@ -18,7 +18,6 @@ export default function SupportOverview() {
     queryKey: ["support-overview-stats", selected?.id],
     queryFn: async () => {
       if (!selected?.id) return null;
-      // Sub-queries are rejected by the SQL guard, so each count is its own query (run in parallel).
       const count = async (sql: string) => {
         const res = await apiAllowDenied("/api/query/execute", { body: { connection_id: selected.id, sql } });
         return res.ok && res.body?.rows?.[0] ? Number(res.body.rows[0][0]) || 0 : null;
@@ -70,22 +69,22 @@ export default function SupportOverview() {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-ink-900/40 to-ink-900/80 p-6 backdrop-blur md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-[#DCE5F0] bg-white p-4 sm:p-6 shadow-sm md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <span className="rounded-md border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold uppercase text-amber-300">
+            <span className="rounded-md border border-[#DCE5F0] bg-[#EAF2FB] px-2 py-0.5 text-xs font-semibold uppercase text-[#123B67]">
               Customer Support Workspace
             </span>
-            <span className="text-xs text-fog-400">· Saffron Bank Ltd</span>
+            <span className="text-xs text-[#64748B]">· Saffron Bank Ltd</span>
           </div>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-fog-100">
+          <h1 className="mt-2 text-xl sm:text-2xl font-bold tracking-tight text-[#172B45]">
             Welcome back, {user?.display_name || "Support Agent"}
           </h1>
-          <p className="mt-1 text-sm text-fog-300">
+          <p className="mt-1 text-xs sm:text-sm text-[#64748B]">
             Secure customer assistance portal. Customer PII is protected with dynamic server-side masking.
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 flex-wrap items-center gap-3">
           <Link to="/support/lookup">
             <Button variant="primary" icon={<Search className="h-4 w-4" />}>
               Customer Lookup
@@ -99,21 +98,11 @@ export default function SupportOverview() {
         </div>
       </div>
 
-      {/* Privacy Policy Guardrail Notice */}
-      <div className="rounded-xl border border-ink-700 bg-ink-900/60 p-4">
-        <div className="flex items-start gap-3">
-          <Shield className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
-          <div className="text-xs leading-relaxed text-fog-300">
-            <strong className="font-semibold text-fog-100">Support Privacy Protections Active:</strong> As an authorized Support agent, customer contact identifiers (phone, email, postal address) and credit cards (<code>4111-XXXX-XXXX-1111</code>) are partially masked for customer verification. Running account balances are <span className="text-rose-300">REDACTED</span> and unauthorized tables (e.g. loan applications) are <span className="text-rose-300">BLOCKED</span>. Server-side masking cannot be bypassed.
-          </div>
-        </div>
-      </div>
-
       {/* Quick Search Card */}
       <Card title="Quick Customer Lookup" subtitle="Search customers by full or partial Customer ID">
         <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-fog-500" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#64748B]" />
             <input
               type="text"
               className="input pl-9 text-sm"
@@ -126,24 +115,10 @@ export default function SupportOverview() {
             Search Customer
           </Button>
         </form>
-
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-fog-400">
-          <span className="font-medium text-fog-300">Sample Customers:</span>
-          {["CIF-00UKL72D", "CIF-007IS5OP", "CIF-0080J9GL", "CIF-007KK65R", "CIF-UGZKM7GD"].map((cif) => (
-            <button
-              key={cif}
-              type="button"
-              onClick={() => navigate(`/support/lookup?q=${encodeURIComponent(cif)}`)}
-              className="rounded border border-ink-600 bg-ink-800 px-2 py-0.5 font-mono text-[11px] text-amber-200 transition-colors hover:border-amber-400 hover:bg-ink-700"
-            >
-              {cif}
-            </button>
-          ))}
-        </div>
       </Card>
 
       {/* Real KPI Stats */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
           label="Total Customers"
           value={statsQ.isLoading ? "…" : statsQ.data?.customers?.toLocaleString() ?? "—"}
@@ -179,7 +154,7 @@ export default function SupportOverview() {
         title="Recent Customer Support Tickets"
         subtitle="Latest customer cases across UPI, Card, Net Banking, and Branch channels"
         actions={
-          <Link to="/support/tickets" className="text-xs text-amber-400 hover:underline">
+          <Link to="/support/tickets" className="text-xs font-semibold text-[#1D5FA7] hover:underline">
             View all tickets →
           </Link>
         }
@@ -190,63 +165,63 @@ export default function SupportOverview() {
           </div>
         ) : recentTicketsQ.data && recentTicketsQ.data.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-ink-700 text-fog-400">
+            <table className="w-full text-left text-xs min-w-[700px]">
+              <thead className="border-b border-[#DCE5F0] bg-[#F4F8FD] text-[#172B45]">
                 <tr>
-                  <th className="pb-2 font-medium">Ticket ID</th>
-                  <th className="pb-2 font-medium">Customer ID</th>
-                  <th className="pb-2 font-medium">Category</th>
-                  <th className="pb-2 font-medium">Channel</th>
-                  <th className="pb-2 font-medium">Priority</th>
-                  <th className="pb-2 font-medium">Status</th>
-                  <th className="pb-2 font-medium">Preview</th>
-                  <th className="pb-2 text-right font-medium">Action</th>
+                  <th className="py-2.5 px-3 font-semibold">Ticket ID</th>
+                  <th className="py-2.5 px-3 font-semibold">Customer ID</th>
+                  <th className="py-2.5 px-3 font-semibold">Category</th>
+                  <th className="py-2.5 px-3 font-semibold">Channel</th>
+                  <th className="py-2.5 px-3 font-semibold">Priority</th>
+                  <th className="py-2.5 px-3 font-semibold">Status</th>
+                  <th className="py-2.5 px-3 font-semibold">Preview</th>
+                  <th className="py-2.5 px-3 text-right font-semibold">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ink-800 text-fog-200">
+              <tbody className="divide-y divide-[#DCE5F0] text-[#172B45]">
                 {recentTicketsQ.data.map((t: any) => (
-                  <tr key={t.id} className="transition-colors hover:bg-ink-800/40">
-                    <td className="py-2.5 font-mono text-amber-200">{t.id}</td>
-                    <td className="py-2.5 font-mono text-fog-300">
+                  <tr key={t.id} className="transition-colors hover:bg-[#F4F8FD]">
+                    <td className="py-2.5 px-3 font-mono font-medium text-[#123B67]">{t.id}</td>
+                    <td className="py-2.5 px-3 font-mono">
                       <Link
                         to={`/support/profiles?id=${encodeURIComponent(t.customerId)}`}
-                        className="text-cyan hover:underline"
+                        className="text-[#1D5FA7] font-semibold hover:underline"
                       >
                         {t.customerId}
                       </Link>
                     </td>
-                    <td className="py-2.5 font-medium">{t.category}</td>
-                    <td className="py-2.5 text-fog-400">{t.channel}</td>
-                    <td className="py-2.5">
+                    <td className="py-2.5 px-3 font-medium">{t.category}</td>
+                    <td className="py-2.5 px-3 text-[#64748B]">{t.channel}</td>
+                    <td className="py-2.5 px-3">
                       <Badge
                         tone={
                           t.priority === "HIGH"
                             ? "red"
                             : t.priority === "MEDIUM"
-                            ? "amber"
-                            : "neutral"
+                              ? "amber"
+                              : "neutral"
                         }
                       >
                         {t.priority}
                       </Badge>
                     </td>
-                    <td className="py-2.5">
+                    <td className="py-2.5 px-3">
                       <Badge
                         tone={
                           t.status === "OPEN"
                             ? "amber"
                             : t.status === "RESOLVED" || t.status === "CLOSED"
-                            ? "green"
-                            : "cyan"
+                              ? "green"
+                              : "cyan"
                         }
                       >
                         {t.status}
                       </Badge>
                     </td>
-                    <td className="max-w-[280px] truncate py-2.5 text-fog-400" title={t.preview}>
+                    <td className="max-w-[280px] truncate py-2.5 px-3 text-[#64748B]" title={t.preview}>
                       {t.preview}…
                     </td>
-                    <td className="py-2.5 text-right">
+                    <td className="py-2.5 px-3 text-right">
                       <Button
                         size="sm"
                         variant="ghost"
@@ -261,7 +236,7 @@ export default function SupportOverview() {
             </table>
           </div>
         ) : (
-          <div className="py-6 text-center text-xs text-fog-400">
+          <div className="py-6 text-center text-xs text-[#64748B]">
             No tickets found in the selected connection.
           </div>
         )}
@@ -271,45 +246,45 @@ export default function SupportOverview() {
       <div className="grid gap-4 sm:grid-cols-3">
         <Link
           to="/support/lookup"
-          className="group rounded-xl border border-ink-700 bg-ink-900/60 p-5 transition-all hover:border-amber-400/50 hover:bg-ink-800/50"
+          className="group rounded-xl border border-[#DCE5F0] bg-white p-5 transition-all hover:border-[#1D5FA7] hover:bg-[#F4F8FD] shadow-sm"
         >
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-amber-400/10 text-amber-300 group-hover:bg-amber-400/20">
+            <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#EAF2FB] text-[#1D5FA7] group-hover:bg-[#1D5FA7] group-hover:text-white transition-colors">
               <Search className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-fog-100">Customer Lookup</div>
-              <div className="text-xs text-fog-400">Search customer records by Customer ID</div>
+              <div className="text-sm font-semibold text-[#172B45]">Customer Lookup</div>
+              <div className="text-xs text-[#64748B]">Search customer records by Customer ID</div>
             </div>
           </div>
         </Link>
 
         <Link
           to="/support/tickets"
-          className="group rounded-xl border border-ink-700 bg-ink-900/60 p-5 transition-all hover:border-amber-400/50 hover:bg-ink-800/50"
+          className="group rounded-xl border border-[#DCE5F0] bg-white p-5 transition-all hover:border-[#1D5FA7] hover:bg-[#F4F8FD] shadow-sm"
         >
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-cyan/10 text-cyan group-hover:bg-cyan/20">
+            <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#EAF2FB] text-[#1D5FA7] group-hover:bg-[#1D5FA7] group-hover:text-white transition-colors">
               <LifeBuoy className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-fog-100">Support Tickets</div>
-              <div className="text-xs text-fog-400">Browse and triage 3,000 customer inquiries</div>
+              <div className="text-sm font-semibold text-[#172B45]">Support Tickets</div>
+              <div className="text-xs text-[#64748B]">Browse and triage 3,000 customer inquiries</div>
             </div>
           </div>
         </Link>
 
         <Link
           to="/support/activity"
-          className="group rounded-xl border border-ink-700 bg-ink-900/60 p-5 transition-all hover:border-amber-400/50 hover:bg-ink-800/50"
+          className="group rounded-xl border border-[#DCE5F0] bg-white p-5 transition-all hover:border-[#1D5FA7] hover:bg-[#F4F8FD] shadow-sm"
         >
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-400/10 text-emerald-300 group-hover:bg-emerald-400/20">
+            <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#EAF2FB] text-[#1D5FA7] group-hover:bg-[#1D5FA7] group-hover:text-white transition-colors">
               <UserCheck className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-fog-100">My Activity Log</div>
-              <div className="text-xs text-fog-400">Review your authenticated lookup history</div>
+              <div className="text-sm font-semibold text-[#172B45]">My Activity Log</div>
+              <div className="text-xs text-[#64748B]">Review your authenticated lookup history</div>
             </div>
           </div>
         </Link>

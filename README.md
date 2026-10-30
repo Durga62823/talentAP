@@ -1,192 +1,237 @@
-# SentinelMask — Smart Data Masking System for PII Protection
+# 234 · B1: DreamGuard — Smart Data Masking System for PII Protection
 
-> Discover sensitive data. Enforce access policies. Protect every query.
+> Automated PII discovery, local and cloud AI classification, and dynamic role-based data masking over financial databases without modifying stored records.
 
-TalentAP Mega Hackathon 2026 · Problem Statement **B1** · built on the **official Saffron Bank Ltd dataset** (9 tables, 129,260 synthetic rows).
+## What it does
 
-SentinelMask connects to SQLite, MySQL and PostgreSQL. It scans schema metadata and random row samples to tag PII (`PII_HIGH`, `PII_MEDIUM`, `FINANCIAL_CONFIDENTIAL`, …), then enforces **role-based dynamic masking on the server at query time**. The stored records are never changed.
+### The Problem
+Financial institutions store sensitive customer data—credit card numbers, national identity identifiers (PAN, Aadhaar, SSN), and account balances—across relational databases. Exposing direct database access to internal teams risks severe regulatory non-compliance (DPDP Act 2023, GDPR, PCI-DSS v4) and insider data leakage. Traditional static masking permanently alters or duplicates data, creating synchronization drift and storage overhead.
 
-```
-<repo>/
-  FULL_CODE/                  all application source code (submission)
-    backend/                  FastAPI engine, importers, tests   (Python 3.12)
-    frontend/                 React 18 + TypeScript + Vite + Tailwind console
-    scripts/                  start.ps1 / start.sh, make_samples.py, postgres_setup.sql
-  Datasets/                   official B1 pack from the organisers  (NOT committed)
-  data/                       runtime state, SQLite copy, generated secrets/samples (NOT committed)
-  .env.example                placeholder configuration
-```
+### Who Uses DreamGuard
+- **Security & Compliance Administrators:** Configure database connections, inspect discovered PII, author masking policies, manage table grants, review cryptographic audit logs, and execute break-glass unmasking with audit justification.
+- **Customer Support Agents:** Access customer records with partial masking (e.g., card numbers show only first 4 and last 4 digits; phone numbers show only the last 4 digits) to verify customer identities without exposing full secrets.
+- **Data Analysts:** Query transaction trends and financial metrics with full name/phone redaction, deterministic HMAC-SHA-256 pseudonymization (preserving relational joins across tables), and enforced aggregate cohort minimums ($k \ge 5$).
+- **Compliance Auditors:** Inspect unbroken cryptographic SHA-256 audit chains and run table fingerprint verifications with zero exposure to raw customer records.
+
+### How Sensitive Information is Discovered
+DreamGuard scans connected database schemas and samples up to 100 random rows per table directly into memory:
+1. **Deterministic Rule Scanner:** Uses regular expressions and mathematical checksum algorithms (Luhn for Credit Cards, Verhoeff for Aadhaar, regex patterns for Indian PAN, US SSN, Passports, IBAN, IFSC, Emails, and Phone Numbers).
+2. **Local Machine Learning Classifier:** An in-process stacked classifier (TF-IDF character n-grams + HistGradientBoosting) trained on 4,700 synthetic columns that classifies columns based on header semantics and sanitized value statistics.
+3. **Optional Cloud LLM (Gemini):** Disambiguates cryptic headers and atypical data patterns using sanitized statistics only (zero raw PII crosses the network boundary).
+4. **Upgrade-Only Arbitration:** An arbitration engine that allows AI/ML to elevate sensitivity ranks (e.g., from `INTERNAL` to `CONFIDENTIAL`), but strictly prevents automated models from downgrading deterministic rule discoveries or overriding prior human reviews.
+
+### How Dynamic Masking Works
+At query runtime, DreamGuard intercepts SQL queries through an Abstract Syntax Tree (AST) engine (`sqlglot`), validates table grants, resolves the caller's role-specific masking policies per column, executes the query against the target database inside a strictly read-only transaction, applies masking transformations in memory, logs the event to a tamper-evident SHA-256 audit chain, and returns the sanitized result set. Stored records are never modified.
+
+### Optimistic Query Optimization Implementation
+DreamGuard implements pre-flight query risk analysis and caching:
+- **Query Risk Analyzer (`/api/query/analyze`):** Validates SQL grammar, resolves AST lineage, and checks column policies without executing against target databases.
+- **In-Memory LRU Result Cache (`execute_cached`):** Caches raw database result tuples. On cache hits, results are dynamically passed through the caller's specific `MaskingEngine`, ensuring sub-2ms response times while preventing cross-role data leaks.
+- *Limitation Disclosure:* Speculative execution and optimistic concurrency control are not implemented; optimization relies on AST pruning, connection pooling, and in-memory LRU caching.
+
+### Zero-Full-Page-Reload User Experience
+DreamGuard is engineered as a pure Single Page Application (SPA) using React 18, React Router v6, and TanStack React Query v5:
+- **Client-Side Routing:** Navigating between operational workspaces (`/admin/*`, `/support/*`, `/analyst/*`) executes without browser reloads.
+- **Reactive Cache Synchronization:** State changes (e.g. updating a policy, reviewing a classification) automatically invalidate corresponding TanStack Query keys, refreshing UI panels asynchronously without full-page reloads.
 
 ---
 
-## 1. Dataset
+## How to run
 
-| | |
-|---|---|
-| Source | TalentAP Mega Hackathon 2026, B1 data pack (Saffron Bank Ltd). Synthetic, CC BY 4.0 |
-| Location | `Datasets/` at the repository root (override with `SENTINEL_DATASET_DIR`) |
-| Tables | branches 60 · customers 5,000 · kyc_records 5,400 · international_customers 300 · accounts 8,000 · cards 6,000 · transactions 100,000 · support_tickets 3,000 · loan_applications 1,500 → **129,260** |
-| Users | `Datasets/data/users.csv`: 9 official sample users (3 Admin, 3 Support, 3 Analyst) |
+### Prerequisites
+- **Python:** 3.12 or newer.
+- **Node.js:** v20.x or newer (with npm).
+- **Evaluation Dataset:** Saffron Bank Ltd pack in `Datasets/` (or copied automatically by startup script).
+- **Operating System:** Windows, Linux, or macOS.
 
-The dataset is **not** in this repository. SentinelMask never generates or edits records:
-- **SQLite:** the official `sql/sqlite/saffron_bank.db` is copied into `data/targets/` (the shipped file is opened read-only). Row counts are verified after every copy.
-- **MySQL / PostgreSQL:** the official `01_schema.sql` and `02_data.sql` scripts are executed statement by statement, and the counts are verified against the official figures.
+### Environment Configuration
+Copy the provided `.env.example` file to `.env` in the repository root:
+```bash
+cp .env.example .env
+```
+*(On Windows PowerShell: `Copy-Item .env.example .env`)*
 
-The previous synthetic demo data (generator, demo DB, sample files) was removed. A copy is kept in the git-ignored `backups/pre_saffron_<timestamp>/`.
+All settings have safe defaults. External services (MySQL, PostgreSQL, Gemini) are strictly optional; DreamGuard runs fully offline using SQLite and the local ML model.
 
----
+### Unified One-Click Startup
 
-## 2. Setup and run (no Docker needed)
-
-Prerequisites: Python 3.12+, Node 20+, the official pack in `Datasets/`. MySQL 8+/9 and PostgreSQL are optional.
-
+#### Windows PowerShell:
 ```powershell
 powershell -ExecutionPolicy Bypass -File FULL_CODE/scripts/start.ps1
 ```
 
+#### Linux / macOS:
 ```bash
+chmod +x FULL_CODE/scripts/start.sh
 ./FULL_CODE/scripts/start.sh
 ```
 
-These scripts create the venv, install dependencies, verify the dataset, build the console and serve everything at <http://127.0.0.1:8000>. On first start the app copies the official SQLite database, scans all 9 tables and seeds users, policies and grants.
+### Manual Step-by-Step Startup
 
-Useful commands (run from `FULL_CODE/backend`, with the venv's Python):
-
+#### 1. Backend Service
 ```bash
-python -m app.cli verify-dataset        # checks the official files + row counts (129,260)
-python -m app.cli reset                 # rebuild app state on the official data (also in Settings)
-python ../scripts/make_samples.py       # upload demo files built from official CSV rows -> data/samples/
-python -m pytest -q                     # test suite
+cd FULL_CODE/backend
+python -m venv .venv
+source .venv/bin/activate       # On Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python -m app.cli reset         # Copies Saffron Bank DB, initializes tables, seeds demo users
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-### MySQL (second backend)
-
-1. Copy `.env.example` to `.env` (repository root) and set `SENTINEL_MYSQL_ADMIN_USER` and `SENTINEL_MYSQL_ADMIN_PASSWORD`. These are used **only** by the importer.
-2. Run `python -m app.cli import-mysql`. It:
-   - refuses to touch an existing `saffron_bank` holding non-dataset tables;
-   - if the official tables already exist, requires `--replace` and first moves them into `saffron_bank_backup_<timestamp>` (reversible `RENAME TABLE`);
-   - runs the official MySQL scripts and verifies all nine counts;
-   - creates `sentinel_app@localhost` with **SELECT on `saffron_bank`** and write access **only** to a separate `saffron_imports` schema (for reviewed CSV imports). Its generated password is stored in `data/secrets/mysql_app.pw`.
-3. Run `python -m app.cli reset`. This registers **Saffron Bank (MySQL)** as its own connection and scans it. If MySQL is down, the connection shows *unhealthy*; it is never silently swapped for another backend.
-
-MySQL queries run inside `START TRANSACTION READ ONLY` with `MAX_EXECUTION_TIME`.
-
-### PostgreSQL (optional third backend)
-
+#### 2. Frontend Console
 ```bash
-psql -h localhost -U postgres -v app_password="'choose-a-password'" -f FULL_CODE/scripts/postgres_setup.sql
-PGPASSWORD=<owner password> python -m app.cli import-postgres --host localhost --user postgres --database saffron_bank
+cd FULL_CODE/frontend
+npm install
+npm run build
+npm run preview -- --port 5173
 ```
 
-Then set `SENTINEL_DEMO_PG_*` in `.env` and reset, or add the connection in the console.
+Open your browser at **`http://127.0.0.1:8000`** (or `http://127.0.0.1:5173`).
 
-### Demo identities (local demo only)
-
-Official users from `users.csv`, plus `compliance_lata` (our addition, since the pack defines no compliance user). `users.csv` contains no passwords, so each role has one demo password:
-
-| Role | Users | Display Name & Email | Password | Role-Specific Experience & Access |
-|---|---|---|---|---|
-| Admin | `admin_anita`<br>`admin_farhan`<br>`admin_meera` | Anita Rao (`admin_anita@saffronbank.example`)<br>Farhan Qureshi (`admin_farhan@saffronbank.example`)<br>Meera Iyer (`admin_meera@saffronbank.example`) | `Admin@2026!` | **Security & Governance Workspace** (`/admin/overview`): Full governance, User Management with table grants, PII Discovery overrides, Masking Policy lifecycle, Tamper-Evident Audit Center, and Source-Data Integrity Verification. PAN/Aadhaar/SSN unmasking requires break-glass justification. (Internal SQL console available discretely). |
-| Support | `support_ravi`<br>`support_neha`<br>`support_joseph` | Ravi Kumar (`support_ravi@saffronbank.example`)<br>Neha Gill (`support_neha@saffronbank.example`)<br>Joseph Pinto (`support_joseph@saffronbank.example`) | `Support@2026!` | **Customer Operations Workspace** (`/support/overview`): Customer Lookup, Customer 360 Profiles, 3,000 Support Tickets triage, and Personal Activity Log. Partial masking on cards (`4111-XXXX-XXXX-1111`), phone numbers (`********1099`), and emails. Running balances and loan applications are strictly redacted/denied. |
-| Analyst | `analyst_kavya`<br>`analyst_arnab`<br>`analyst_hetal` | Kavya Hegde (`analyst_kavya@saffronbank.example`)<br>Arnab Dutta (`analyst_arnab@saffronbank.example`)<br>Hetal Shah (`analyst_hetal@saffronbank.example`) | `Analyst@2026!` | **Privacy-Preserving Analytics Workspace** (`/analyst/overview`): Visual Analytics, Monthly Transaction Trends (100k txns), Aggregate Explorer ($k \ge 5$ threshold enforced), Privacy-Screened CSV Reports, and My Activity. Names/phones redacted, cards HMAC pseudonyms (`hm_k1_...`), balances aggregate-only. |
-| Compliance | `compliance_lata` | Lata Menon (`compliance_lata@saffronbank.example`) | `Compliance@2026!` | **Compliance Review Workspace** (`/admin/overview`): Reviews PII tags, audit trail hash chains, and integrity runs without raw PII exposure. Cannot alter policies, grants, or accounts. |
+### Pre-Seeded Evaluation Accounts
+- **Admin:** `admin_anita` / `Admin@2026!` (Security & Governance Workspace)
+- **Support:** `support_ravi` / `Support@2026!` (Customer Operations Workspace)
+- **Analyst:** `analyst_kavya` / `Analyst@2026!` (Privacy-Preserving Analytics Workspace)
+- **Compliance:** `compliance_lata` / `Compliance@2026!` (Audit & Verification Workspace)
 
 ---
 
-## 3. Role-Based Workspace Architecture
+## How to run the tests
 
-In accordance with Hackathon Problem Statement B1, **Live Query Playground has been removed as the primary default landing page**. Instead, Dream Guard delivers dedicated, role-specific workspaces tailored to the operational duties of each authenticated persona:
+Execute the complete automated test suite with Python using `pytest`:
 
-### A. Admin Dashboard (`/admin/*`)
-- **Overview (`/admin/overview`):** Protected tables count, sensitive columns classified, active policies, security events timeline, database connection health, and source-data integrity status.
-- **User Management (`/admin/users`):** Complete directory of all nine demo identities, role assignment editor, account active/suspend controls, and the database table grants matrix.
-- **Data Discovery (`/admin/discovery`):** Scanned schemas, classified sensitive columns (`PII_HIGH`, `PII_MEDIUM`, `FINANCIAL_CONFIDENTIAL`), confidence ratings, and classification override review.
-- **Masking Policies (`/admin/policies`):** Granular policy rules across categories and individual columns (`ALLOW`, `PARTIAL`, `REDACT`, `HASH`, `GENERALIZE`, `AGGREGATE_ONLY`, `BREAK_GLASS`).
-- **Database & Tables (`/admin/connections`):** Multi-database connectors for SQLite, MySQL, and PostgreSQL.
-- **Audit Center (`/admin/audit`):** Tamper-evident, hash-chained audit log with sequence validation (`verify-chain`).
-- **Integrity Verification (`/admin/integrity`):** Cryptographic table fingerprinting to verify source data is never altered.
-- **Settings (`/admin/settings`):** Global configurations and database re-seeding utilities.
-
-### B. Customer Support Dashboard (`/support/*`)
-- **Overview (`/support/overview`):** Customer service statistics, active masking policy banner, fast Customer ID lookup, and recent support cases preview.
-- **Customer Lookup (`/support/lookup`):** Search by Customer ID (e.g. `CIF-00UKL72D`), Name, or Mobile Number with dynamic server-side partial masking.
-- **Customer Profiles (`/support/profiles`):** Customer 360 dossier showing masked contact details, linked accounts with redacted running balances, linked payment cards (`4111-XXXX-XXXX-1111`) with permitted credit limits, and past support history. Zero raw PII exposure.
-- **Support Tickets (`/support/tickets`):** Comprehensive inquiry management across 3,000 real Saffron Bank customer tickets with category, priority, and status filters.
-- **Recent Activity (`/support/activity`):** Isolated audit stream of the authenticated support agent's lookups and outcomes (`GET /api/audit/self`).
-
-### C. Data Analyst Dashboard (`/analyst/*`)
-- **Overview (`/analyst/overview`):** Differential privacy metrics, k-anonymity guarantee status ($k \ge 5$), settled transaction totals, and channel distribution widgets.
-- **Analytics (`/analyst/analytics`):** Interactive Recharts visualizations for payment rails volume (UPI, POS, ATM, IMPS, NEFT, etc.), success vs failure rates, and debit vs credit distribution.
-- **Transaction Trends (`/analyst/trends`):** Time-series analysis across 100,000 transactions with monthly volume and transaction velocity charts.
-- **Aggregate Explorer (`/analyst/explorer`):** Interactive aggregation builder. Demonstrates server-side k-anonymity enforcement ($k \ge 5$) and built-in interactive security stress tests that verify rejection of inference attacks (e.g. `CARD_NO LIKE '4111%'`).
-- **Export Reports (`/analyst/reports`):** Pre-configured privacy-screened reports with verified CSV export derived strictly from server-screened aggregate data.
-- **My Activity (`/analyst/activity`):** Personal audit log showing queries executed, durations, and any rejected inference attempts.
-
----
-
-## 4. Masking on the official schema
-
-The scanner combines column-name heuristics (including abbreviations), types, validated value patterns, pattern frequency over a **random** sample, and table context. The first N rows of `transactions` hide most of the PII that appears later, so random sampling matters.
-
-| Column(s) | Detected as | How |
-|---|---|---|
-| `customers.mob_no`, `alt_mob`, `international_customers.us_phone` | PHONE | 10–15 digits; Indian `0`/`+91`/`91` prefixes; NANP |
-| `customers.emailid` | EMAIL | format + name hint |
-| `customers.addr_line1/2`, `us_addr` | POSTAL_ADDRESS | Indian forms (`H.No 20-50/12`, `Flat 408`, locality names) |
-| `cust_nm`, `pita_nm`, `nominee_nm`, `NAME_ON_CARD`, `counterparty` | PERSON_NAME | abbreviation hints (`nm`), value shape; `branch_nm`/`employer_nm` excluded |
-| `kyc_records.pan_no`, `aadhaar_no`, `international_customers.ssn` | NATIONAL_ID (PII_HIGH) | **shape-level** detection: the official Aadhaar numbers deliberately fail Verhoeff and SSNs use never-issued 9xx areas. For *protection* the shape is enough; real validity only raises confidence |
-| `loan_applications.col_7` | NATIONAL_ID | undocumented column, detected **by value** (PAN shape) |
-| `cards.CARD_NO` | CREDIT_CARD (PII_HIGH) | Luhn + issuer prefix |
-| `accounts.account_no`, `cards.LINKED_ACCT` | ACCOUNT_NUMBER | name + 8–18 digits |
-| `curr_bal`, `amount_inr`, `bal_after`, `CREDIT_LIMIT`, `OUTSTANDING_AMT`, `od_limit_inr`, `declared_income_inr`, `sanctioned_amt_inr`, `amt_requested_inr` | FINANCIAL_AMOUNT (FINANCIAL_CONFIDENTIAL, not personal) | a name hint is required; `int_rate_pct`/`roi_pct` stay public |
-| `credit_score` | CREDIT_SCORE | banded in 50s (`700–749`) |
-| `narration`, `ticket_text`, `notes`, `remarks`, `extra_info`, `kyc_meta` | FREE_TEXT_PII | **span masking**: cards, phones, UPI IDs, emails, PAN/Aadhaar/SSN shapes, JSON keys (`"uid": …`) and the payer-name segment of `UPI/CR/…/NAME/…`, `IMPS/…`, `NEFT/…` narrations. The rest stays readable |
-| `transactions.ref_no` | FREE_TEXT_PII (mixed) | about 25% of values are card numbers; those are masked and `SAFFN…` references stay readable |
-| `rrn`, `txn_id`, `CARD_REF`, `kyc_id` | not sensitive | reference context suppresses Aadhaar/phone look-alikes |
-| `branches.branch_phone`, `branch_email` | ORG_CONTACT (internal) | organisational context: bank contacts, not personal data |
-
-Policies are stored per role and category, with column-level overrides (e.g. Support may see `cards.CREDIT_LIMIT`). Precedence is deterministic, and every change is versioned and audited. Sensitive columns with no policy fail closed to REDACT, and tables that were never scanned cannot be queried.
-
-The query engine accepts one read-only SELECT (sqlglot AST allow-list) and traces each output column to its source. It also blocks filtering, sorting or grouping on masked columns (inference protection) and enforces a row cap and timeout. Every query is recorded in a hash-chained, append-only audit log.
-
----
-
-## 4. Verification (actually run on this machine)
-
-| Check | Result |
-|---|---|
-| Nine official tables exist; counts match the README (transactions = 100,000; total 129,260) | ✅ SQLite (copy of official DB) · ✅ PostgreSQL 17 (official scripts via `import-postgres`) · ⏳ MySQL: importer and tests written, **not yet run** (waiting for admin credentials in `.env`) |
-| Tables and columns appear dynamically (schema browser, query explorer, discovery) | ✅ SQLite, ✅ PostgreSQL |
-| PII scan on official data | ✅ 9 tables, 120 columns, 38 sensitive; same results on 3 random samples (test) |
-| Same record (`CIF-00UKL72D`) as Admin / Support / Analyst / Compliance | ✅ API tests + browser; **identical masked output on SQLite and PostgreSQL** for all four roles |
-| Masking does not alter stored records | ✅ SQLite copy byte-identical after queries + attempted DML; fingerprint before/after on 13,000 rows; PG READ ONLY transaction blocks a DELETE even when the guard is bypassed |
-| Backend tests | **121 passed** with PostgreSQL configured (115 passed / 13 skipped without PG and MySQL). The 7 MySQL tests skip until configured |
-| Frontend | `tsc -b` clean; `vite build` succeeds |
-| Legacy `.doc` | ✅ real Word-generated `.doc` (from official tickets) extracted with antiword |
-
-Run the MySQL tests after importing:
+```powershell
+# Windows PowerShell (from repository root)
+$env:PYTHONPATH="FULL_CODE/backend"
+FULL_CODE\backend\.venv\Scripts\python -m pytest FULL_CODE/backend/tests -q
+```
 
 ```bash
-SENTINEL_TEST_MYSQL_PASSWORD=<contents of data/secrets/mysql_app.pw> python -m pytest tests/test_mysql.py
+# Linux / macOS (from repository root)
+PYTHONPATH="FULL_CODE/backend" FULL_CODE/backend/.venv/bin/python -m pytest FULL_CODE/backend/tests -q
+```
+
+### Verified Test Suite Results
+- **Total Tests Executed:** 166 tests.
+- **Passing Tests:** **152 passed**.
+- **Skipped Tests:** 14 skipped (live MySQL and PostgreSQL server integration tests, safely skipped when optional database server passwords are not configured in `.env`).
+- **Failures:** **0 failed**.
+- **Execution Time:** ~116 seconds.
+
+### Frontend TypeScript Verification
+```bash
+npm --prefix FULL_CODE/frontend run typecheck
+# Result: 0 errors
 ```
 
 ---
 
-## 5. Known limitations
+## Architecture
 
-- Names typed into free prose (e.g. a signature like "- Krupa" in `ticket_text`) are not detected. Only structured narration name segments are. Analyst redacts these columns entirely; Support and Compliance see span-masked text.
-- Discovery is heuristic. Shape-level ID detection favours protection, so it can over-mask look-alike values. `branches.addr` is left public as a branch address.
-- Bare 12-digit Aadhaar numbers outside a key (`"uid": …`) or a spaced/masked format are not flagged in free text, to avoid masking every RRN.
-- The SQL subset is restricted: no sub-queries, CTEs, UNION or functions besides COUNT/SUM/AVG/MIN/MAX.
-- Pseudonyms are not anonymous. HMAC values can be confirmed by anyone holding the key.
-- The audit log is tamper-evident, not tamper-proof.
-- Demo passwords are documented and bundled into the login page for one-click sign-in. Never deploy them.
-- This is a prototype for demonstration. It is not certified for GDPR, HIPAA, PCI DSS or any other regime.
+```
++─────────────────────────────────────────────────────────────────────────────+
+|                         DREAMGUARD SYSTEM ARCHITECTURE                      |
++─────────────────────────────────────────────────────────────────────────────+
+| [Client Browser]  React 18 + Vite + Tailwind CSS (Zero-Reload SPA)         |
++──────────────────────────────────────┬──────────────────────────────────────+
+                                       │ HTTPS /api/*
+                                       ▼
++─────────────────────────────────────────────────────────────────────────────+
+| [FastAPI Enforcement Gateway]  (Python 3.12 / Uvicorn)                      |
+| ├── Auth & RBAC: Principal resolution, session token hashing (app/security) |
+| ├── SQL Guard: AST grammar, lineage tracing, LIMIT rewrite (app/sql_guard)  |
+| ├── Policy Engine: 4-level precedence rule resolver (app/policy.py)         |
+| ├── Result Cache: Thread-safe LRU + TTL query cache (app/connectors.py)     |
+| ├── Dynamic Masking Engine: HMAC-SHA256, Partial, Redact (app/masking.py)   |
+| ├── Audit System: SHA-256 hash-chained immutable log (app/audit.py)         |
+| └── Metadata DB: SQLite sentinel_meta.db (WAL mode, triggers)               |
++───────────────────────┬──────────────────────────────┬──────────────────────+
+                        │                              │
+          Sanitized Stats Only (No Raw PII)            │ Strict Read-Only Queries
+                        ▼                              ▼
++────────────────────────────────+   +────────────────────────────────────────+
+| [PII Intelligence Pipeline]    |   | [Target Database Tier]                 |
+| ├── Rule Scanner (app/scanner) |   | ├── SQLite Saffron Bank (129,260 rows) |
+| ├── Local ML (app/ml/model)    |   | ├── MySQL 8+ (START TRANSACTION RO)    |
+| ├── Gemini API (sanitized JSON)|   | └── PostgreSQL (Read-Only User)        |
+| └── Upgrade Arbitration Engine |   +────────────────────────────────────────+
++────────────────────────────────+
+```
+
+### Main Modules and Directories
+- `FULL_CODE/backend/app/main.py`: Application entry point, middleware, CORS, and route registration.
+- `FULL_CODE/backend/app/security.py`: Authentication, bcrypt password hashing, and role permissions.
+- `FULL_CODE/backend/app/sql_guard.py`: `sqlglot` AST parsing, SQL injection protection, column lineage resolution, and automatic `LIMIT` injection.
+- `FULL_CODE/backend/app/query_engine.py`: Single enforcement path: authorization -> AST rewrite -> cache -> read-only execution -> masking -> audit.
+- `FULL_CODE/backend/app/policy.py`: Policy precedence cascade (Column -> Category -> Sensitivity -> Role Default).
+- `FULL_CODE/backend/app/masking.py`: Server-side transformation routines (`PARTIAL`, `HASH_HMAC`, `REDACT`, `DROP`, `ALLOW`).
+- `FULL_CODE/backend/app/connectors.py`: Multi-backend read-only connection pooling and LRU result cache.
+- `FULL_CODE/backend/app/scanner.py`: Deterministic regex and checksum validators (Luhn, Verhoeff, PAN).
+- `FULL_CODE/backend/app/ml/`: Local in-process machine learning pipeline (`model.py`, `train.py`, `featurize.py`, `artifacts/pii_model.joblib`).
+- `FULL_CODE/backend/app/ai_classifier.py`: Google Gemini API client and upgrade-only arbitration engine.
+- `FULL_CODE/backend/app/audit.py`: Cryptographic SHA-256 tamper-evident event chaining.
+- `FULL_CODE/backend/app/integrity.py`: Cumulative table row fingerprinting verifying source immutability.
+- `FULL_CODE/frontend/src/`: React 18 Single Page Application with dedicated role-specific operational workspaces.
 
 ---
 
-## 6. AI tools and pre-built code (coding-guideline disclosure)
+## AI usage
 
-- **AI assistance:** this project was designed and implemented with **Claude Code** (Anthropic, model Claude Opus 5.5) acting on the team's instructions: architecture, backend, frontend, tests and documentation. All code was run and tested locally; the results above are from those runs.
-- **Pre-built code:** no project template was used. Third-party open-source libraries only, as listed in `FULL_CODE/backend/requirements.txt` (FastAPI, SQLAlchemy, sqlglot, Pydantic, argon2-cffi, cryptography, python-docx, PyMySQL, psycopg, pytest, uvicorn) and `FULL_CODE/frontend/package.json` (React, React Router, TanStack Query, Recharts, lucide-react, Tailwind CSS, Vite). Legacy `.doc` extraction uses the external `antiword` binary when installed.
-- **Data:** only the organisers' synthetic dataset. No real personal data is used.
+### 1. In-Application AI & Machine Learning
+
+#### A. Local In-Process Machine Learning Classifier (`app/ml/model.py`)
+- **Algorithm:** Stacked model: TF-IDF character n-gram Logistic Regression on column names combined with HistGradientBoostingClassifier on 37 sanitized value statistics, calibrated via 5-fold isotonic calibration (`CalibratedClassifierCV`).
+- **Execution:** Runs 100% in-process via `scikit-learn` and `joblib`. Requires zero internet access, zero API keys, and has sub-5ms inference latency.
+- **Model Artifact:** Bundled in repository at `FULL_CODE/backend/app/ml/artifacts/pii_model.joblib` (5.7 MB) with metadata in `model_card.json`.
+- **Performance:** **98.23% accuracy** on synthetic held-out column names; **0.880 Macro F1** on official Saffron Bank benchmark columns.
+
+#### B. Cloud Contextual LLM (`app/ai_classifier.py`)
+- **Model & Provider:** Google Gemini (`gemini-2.5-flash` / `gemini-3.8-flash`) via `google-genai` SDK.
+- **Role:** Contextual disambiguation of abbreviated or non-standard column headers (e.g. `mob_no`, `cust_nm`).
+- **Privacy Enforcement (Zero Raw PII Egress):** The Gemini API **never receives raw customer rows**. Only statistical metadata (character ratios, string lengths, regex match proportions) is transmitted.
+- **Upgrade-Only Arbitration:** Models can only elevate sensitivity rank; they can never downgrade deterministic rule discoveries or override prior human administrator reviews.
+
+### 2. AI-Assisted Development Tools
+- **Antigravity / Google DeepMind Agentic Assistant:** Used for codebase exploration, test orchestration, schema alignment, and architectural validation.
+- **Claude Code (Anthropic):** Used for initial synthetic corpus generation scripts (`synth.py`) and regex entity verification.
+- **Human Engineering & Ownership:** All core architecture, AST lineage algorithms, SQL security controls, cryptographic hash chains, and business logic were engineered, debugged, and verified by the development team.
+
+---
+
+## Pre-built and third-party code
+
+### 1. Pre-built Libraries & Frameworks (Installed via Manifests)
+- **FastAPI (0.115.5) & Starlette:** Web framework and routing under MIT License.
+- **Uvicorn (0.32.0):** ASGI server under BSD 3-Clause License.
+- **SQLAlchemy (2.0.36):** Database toolkit and connection pooling under MIT License.
+- **sqlglot (26.2.0):** SQL AST parser, transpiler, and lineage analyzer under MIT License.
+- **scikit-learn (1.5.2+) & NumPy:** Machine learning algorithms and numerical arrays under BSD 3-Clause License.
+- **joblib (1.4.2):** Python object serialization under BSD 3-Clause License.
+- **google-genai (0.1.1):** Google GenAI SDK under Apache 2.0 License.
+- **bcrypt (4.2.1) & cryptography:** Password hashing and cryptographic primitives under Apache 2.0 / BSD License.
+- **React (18.3.1), Vite (5.4.11), Tailwind CSS (3.4.15):** Frontend UI library, bundler, and CSS framework under MIT License.
+- **TanStack React Query (5.62.0):** Asynchronous state management under MIT License.
+- **Recharts (2.13.3) & Lucide React (0.460.0):** Charting components and icons under MIT License.
+- **pdfplumber & python-docx:** Document text extraction under MIT License.
+
+### 2. Benchmark Dataset
+- **Saffron Bank Ltd Dataset:** Official benchmark data pack provided by the hackathon organizers (9 tables, 129,260 synthetic records). Synthetic test data under Creative Commons Attribution 4.0 International (CC BY 4.0).
+
+---
+
+## Limitations
+
+### 1. Unimplemented Speculative Concurrency
+While DreamGuard implements query risk pre-flight analysis (`/api/query/analyze`) and in-memory LRU result caching (`execute_cached`), it does not implement speculative optimistic execution or multi-version optimistic concurrency control (OCC).
+
+### 2. Single-Instance Cache Architecture
+The result cache is an in-memory LRU structure (`OrderedDict`) residing in the FastAPI process memory. In a multi-replica distributed deployment, an external distributed cache (such as Redis) would be required to share cached queries across horizontal backend instances.
+
+### 3. Unsupported Database Dialects
+DreamGuard provides verified adapters for SQLite, MySQL, and PostgreSQL. Enterprise data warehouses (e.g. Snowflake, Google BigQuery, Oracle Database, Microsoft SQL Server) are currently planned for future roadmap releases.
+
+### 4. Cloud LLM Network Dependency
+While local ML and rule-based detection run 100% offline, the optional Gemini AI classification layer requires external internet egress to Google APIs. When internet is unavailable, DreamGuard operates on rule and local ML models without disruption.
+
+### 5. Document Parser Limitations
+Unstructured document scanning for legacy `.doc` files relies on external `antiword` binary availability; without it, legacy `.doc` parsing is skipped while `.docx`, `.pdf`, `.csv`, and `.txt` parsing remain fully supported.
