@@ -1,4 +1,4 @@
-import { KeyRound, Lock, ShieldCheck } from "lucide-react";
+import { KeyRound, Lock } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert, Button } from "../components/ui";
@@ -45,12 +45,14 @@ export default function LoginPage() {
         <div className="grid gap-6 md:grid-cols-[1.05fr_1.15fr]">
           {/* Left Column: Product Branding & Features */}
           <div className="flex flex-col justify-center">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-accent-strong to-[#4338CA] shadow-lg shadow-accent/30">
-                <ShieldCheck className="h-6 w-6 text-white" />
-              </div>
+            <div className="mb-6 flex items-center gap-3.5">
+              <img
+                src="/logo-emblem.png"
+                alt="Dream Guard Shield"
+                className="h-14 w-14 shrink-0 object-contain drop-shadow-[0_4px_16px_rgba(249,115,22,0.35)]"
+              />
               <div>
-                <div className="text-xl font-bold tracking-tight text-fog-100">Dream Guard</div>
+                <div className="text-2xl font-bold tracking-tight text-fog-100">Dream Guard</div>
                 <div className="text-xs text-fog-400">Intelligent Role-Based Data Protection Platform</div>
               </div>
             </div>

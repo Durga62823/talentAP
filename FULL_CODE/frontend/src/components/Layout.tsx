@@ -14,7 +14,6 @@ import {
   ScrollText,
   Search,
   Settings,
-  ShieldCheck,
   SlidersHorizontal,
   TerminalSquare,
   TrendingUp,
@@ -117,13 +116,15 @@ export default function Layout() {
     <div className="flex h-full">
       {/* Sidebar Desktop */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-ink-700/80 bg-ink-900/80 lg:flex">
-        <Link to={roleHome} className="flex items-center gap-2.5 px-5 py-5 transition-opacity hover:opacity-90">
-          <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-accent-strong to-[#4338CA] shadow-lg shadow-accent/20">
-            <ShieldCheck className="h-5 w-5 text-white" />
-          </div>
+        <Link to={roleHome} className="flex items-center gap-3 px-5 py-5 transition-opacity hover:opacity-90">
+          <img
+            src="/logo-emblem.png"
+            alt="Dream Guard Shield"
+            className="h-10 w-10 shrink-0 object-contain drop-shadow-[0_2px_10px_rgba(249,115,22,0.25)]"
+          />
           <div>
-            <div className="text-[15px] font-semibold tracking-tight text-fog-100">Dream Guard</div>
-            <div className="text-[11px] text-fog-500">Data Protection Engine</div>
+            <div className="text-[15px] font-bold tracking-tight text-fog-100">Dream Guard</div>
+            <div className="text-[11px] font-medium text-fog-400">Data Protection Engine</div>
           </div>
         </Link>
 
@@ -211,6 +212,9 @@ export default function Layout() {
         {/* Top Header */}
         <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-ink-700/80 bg-ink-900/60 px-4 backdrop-blur lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
+            <Link to={roleHome} className="flex items-center gap-2 lg:hidden shrink-0" title="Dream Guard">
+              <img src="/logo-emblem.png" alt="Dream Guard" className="h-7 w-7 object-contain drop-shadow-[0_1px_4px_rgba(249,115,22,0.3)]" />
+            </Link>
             <label htmlFor="db-select" className="hidden text-xs text-fog-500 sm:block">
               Database
             </label>
