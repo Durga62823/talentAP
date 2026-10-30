@@ -164,12 +164,14 @@ def get_schema(conn_id: str, p: Principal = Depends(require("connections:manage"
 class ScanIn(BaseModel):
     sample_size: int = Field(default=300, ge=10, le=2000)
     tables: list[str] | None = None
+    ai: bool = True  # also classify with Gemini (sanitized features only); falls back to rules if unavailable
+    ml: bool = False  # also classify with the local ML model (app/ml); off unless requested
 
 
 @router.post("/{conn_id}/scan")
 def run_scan(conn_id: str, body: ScanIn, request: Request, p: Principal = Depends(require("scan:run")), db: Session = Depends(get_db)):
     conn = get_conn(db, conn_id)
-    run = scan_connection(db, p, conn, sample_size=body.sample_size, tables=body.tables, correlation_id=corr(request))
+    run = scan_connection(db, p, conn, sample_size=body.sample_size, tables=body.tables, correlation_id=corr(request), use_ai=body.ai, use_ml=body.ml)
     if run.status == "completed" and conn.status != "healthy":
         conn.status, conn.status_detail = "healthy", "connected"
         db.commit()

@@ -4,7 +4,7 @@ import { Ban, ChevronDown, ChevronRight, Columns3, Eye, KeyRound, Play, ShieldAl
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { RoleChip } from "../components/Layout";
-import { ActionBadge, Alert, Badge, Button, Card, Empty, ErrorText, PageHeader, SensBadge, Spinner, Tabs, Value } from "../components/ui";
+import { ActionBadge, Alert, Badge, Button, Card, Empty, ErrorText, SensBadge, Spinner, Tabs, Value } from "../components/ui";
 import { api, apiAllowDenied } from "../lib/api";
 import { DEMO_ACCOUNTS, useAuth } from "../lib/auth";
 import { KIND_LABEL, useConnections } from "../lib/connections";
@@ -275,10 +275,7 @@ export default function PlaygroundPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Live Query Playground"
-        description="Every query runs the full server pipeline: authenticate → authorise tables → parse (sqlglot) → lineage → classifications → policies → read-only execution → masking → audit."
-      />
+
       <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
         <div className="min-w-0 space-y-4">
           <Card

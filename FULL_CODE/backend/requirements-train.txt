@@ -1,0 +1,3 @@
+# Training-only dependencies for the ML classifier: python -m app.ml.train
+-r requirements.txt
+Faker==40.44.0

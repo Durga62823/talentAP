@@ -62,9 +62,8 @@ function Grants() {
                       <button
                         aria-label={`${on ? "Revoke" : "Grant"} ${t} for ${r}`}
                         onClick={() => toggle(r, t)}
-                        className={`inline-grid h-6 w-6 place-items-center rounded-md border ${
-                          on ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-300" : "border-ink-600 text-fog-500 hover:border-ink-500"
-                        }`}
+                        className={`inline-grid h-6 w-6 place-items-center rounded-md border ${on ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-300" : "border-ink-600 text-fog-500 hover:border-ink-500"
+                          }`}
                       >
                         {on ? <Check className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}
                       </button>
@@ -83,9 +82,7 @@ function Grants() {
           </Button>
         ))}
       </div>
-      <p className="text-[11px] text-fog-500">
-        Default deny: a role can only query tables granted here. Table grants restrict access before any column masking logic executes.
-      </p>
+
     </div>
   );
 }
@@ -141,7 +138,7 @@ export default function UserManagement() {
     <div className="space-y-6">
       <PageHeader
         title="User & Access Governance"
-        description="Manage the nine official demo identities, security roles, and database permissions. Identity resolution occurs server-side on every request."
+
         actions={
           <Button variant="primary" icon={<UserPlus className="h-4 w-4" />} onClick={() => setAdding(true)}>
             Add New User
@@ -271,9 +268,7 @@ export default function UserManagement() {
                 </div>
                 <Badge tone="green">Full View + Break-Glass</Badge>
               </div>
-              <p className="mt-1.5 text-fog-400 leading-relaxed">
-                Full governance privileges. Unmasked view for audit, policy management, discovery overrides, and government IDs via break-glass justification.
-              </p>
+
             </div>
 
             <div className="rounded-lg border border-ink-700 bg-ink-900/40 p-3.5">
@@ -284,9 +279,7 @@ export default function UserManagement() {
                 </div>
                 <Badge tone="amber">Partial Masking</Badge>
               </div>
-              <p className="mt-1.5 text-fog-400 leading-relaxed">
-                Customer lookup and verification access. Partial masking for cards (<code>4111-XXXX-XXXX-1111</code>) and contact details. Running balances and loan applications are redacted or denied.
-              </p>
+
             </div>
 
             <div className="rounded-lg border border-ink-700 bg-ink-900/40 p-3.5">
@@ -297,22 +290,12 @@ export default function UserManagement() {
                 </div>
                 <Badge tone="cyan">k-Anonymity (k ≥ 5)</Badge>
               </div>
-              <p className="mt-1.5 text-fog-400 leading-relaxed">
-                Aggregated financial insights and trend reports. Names/mobiles redacted, card numbers keyed HMAC pseudonyms, and balances aggregate-only.
-              </p>
+
             </div>
 
             <div className="rounded-lg border border-ink-700 bg-ink-900/40 p-3.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <RoleChip role="compliance" />
-                  <span className="font-semibold text-fog-100">Compliance Officer</span>
-                </div>
-                <Badge tone="violet">Audit & Integrity</Badge>
-              </div>
-              <p className="mt-1.5 text-fog-400 leading-relaxed">
-                Reviews PII classifications, audit trails, and source data integrity verification runs without raw PII exposure.
-              </p>
+
+
             </div>
           </div>
         </Card>

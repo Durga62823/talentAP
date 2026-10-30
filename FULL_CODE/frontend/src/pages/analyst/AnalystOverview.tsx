@@ -79,7 +79,7 @@ export default function AnalystOverview() {
             Welcome, {user?.display_name || "Data Analyst"}
           </h1>
           <p className="mt-1 text-sm text-fog-300">
-            Aggregated intelligence & transactional insights with server-side k-anonymity guarantees ($k \ge 5$).
+            Aggregated intelligence & transactional insights with server-side k-anonymity guarantees (k ≥ 5).
           </p>
         </div>
 
@@ -102,7 +102,7 @@ export default function AnalystOverview() {
         <div className="flex items-start gap-3">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-cyan" />
           <div className="text-xs leading-relaxed text-fog-300">
-            <strong className="font-semibold text-fog-100">Differential Privacy & k-Anonymity ($k \ge 5$):</strong> All analytics queries are rewritten and verified on the server. Groups with fewer than 5 records are automatically suppressed. Individual financial balances and amounts are strictly <span className="text-amber-300">AGGREGATE-ONLY</span>. Customer names and phone numbers are <span className="text-rose-300">REDACTED</span>, and card identifiers use <span className="text-cyan">KEYED HMAC TOKENS</span>.
+            <strong className="font-semibold text-fog-100">Differential Privacy & k-Anonymity (k ≥ 5):</strong> All analytics queries are rewritten and verified on the server. Groups with fewer than 5 records are automatically suppressed. Individual financial balances and amounts are strictly <span className="text-amber-300">AGGREGATE-ONLY</span>. Customer names and phone numbers are <span className="text-rose-300">REDACTED</span>, and card identifiers use <span className="text-cyan">KEYED HMAC TOKENS</span>.
           </div>
         </div>
       </div>

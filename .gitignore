@@ -47,6 +47,8 @@ Datasets/*
 *.sql.bak
 Datasets/sql/sqlite/saffron_bank.sql
 !Datasets/data/users.csv
+# Hand-labelled evaluation set for the ML classifier (column labels only, no data)
+!FULL_CODE/backend/app/ml/eval/*.csv
 
 # ------------------------------------------------------------------------------
 # 3. Python Runtime, Caches & Virtual Environments

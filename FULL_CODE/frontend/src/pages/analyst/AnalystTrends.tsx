@@ -21,21 +21,34 @@ export default function AnalystTrends() {
     queryKey: ["analyst-monthly-trends", selected?.id],
     queryFn: async () => {
       if (!selected?.id) return [];
-      const res = await apiAllowDenied("/api/query/execute", {
-        body: {
-          connection_id: selected.id,
-          sql: "SELECT substr(txn_ts, 1, 7) AS month_str, COUNT(*) AS txn_count, SUM(amount_inr) AS monthly_vol FROM transactions GROUP BY month_str ORDER BY month_str",
-        },
-      });
-      if (res.ok && res.body?.rows) {
-        return res.body.rows.map((r: any[]) => ({
-          month: r[0],
-          count: Number(r[1]) || 0,
-          volume: Math.round(Number(r[2]) || 0),
-          volumeCrores: Number(((Number(r[2]) || 0) / 10000000).toFixed(2)),
-        }));
+      // The SQL guard allows no functions besides COUNT/SUM/AVG/MIN/MAX, so bucket by month with
+      // one range-filtered aggregate per month (txn_ts is visible raw, so it may be filtered on).
+      const run = (sql: string) => apiAllowDenied("/api/query/execute", { body: { connection_id: selected.id, sql } });
+      const range = await run("SELECT MIN(txn_ts) AS first_ts, MAX(txn_ts) AS last_ts FROM transactions");
+      const [first, last] = (range.ok && range.body?.rows?.[0]) || [];
+      if (!first || !last) return [];
+      const months: string[] = [];
+      for (let y = +first.slice(0, 4), m = +first.slice(5, 7); `${y}-${String(m).padStart(2, "0")}` <= last.slice(0, 7); m === 12 ? (y++, (m = 1)) : m++) {
+        months.push(`${y}-${String(m).padStart(2, "0")}`);
       }
-      return [];
+      const next = (ym: string) => {
+        const [y, m] = ym.split("-").map(Number);
+        return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+      };
+      const results = await Promise.all(
+        months.map((ym) =>
+          run(`SELECT COUNT(*) AS txn_count, SUM(amount_inr) AS monthly_vol FROM transactions WHERE txn_ts >= '${ym}' AND txn_ts < '${next(ym)}'`),
+        ),
+      );
+      return months.map((month, i) => {
+        const r = (results[i].ok && results[i].body?.rows?.[0]) || [0, 0];
+        return {
+          month,
+          count: Number(r[0]) || 0,
+          volume: Math.round(Number(r[1]) || 0),
+          volumeCrores: Number(((Number(r[1]) || 0) / 10000000).toFixed(2)),
+        };
+      });
     },
     enabled: !!selected?.id,
   });
@@ -70,7 +83,7 @@ export default function AnalystTrends() {
         <div className="flex items-start gap-3">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-cyan" />
           <div className="text-xs leading-relaxed text-fog-300">
-            <strong className="text-fog-100">k-Anonymity Guard Enforced:</strong> Time-series buckets are aggregated at monthly resolution ($k \ge 5$). Micro-time intervals that could isolate individual customer transactions are prohibited.
+            <strong className="text-fog-100">k-Anonymity Guard Enforced:</strong> Time-series buckets are aggregated at monthly resolution (k ≥ 5). Micro-time intervals that could isolate individual customer transactions are prohibited.
           </div>
         </div>
       </div>

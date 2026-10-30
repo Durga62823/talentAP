@@ -62,9 +62,8 @@ function Grants() {
                       <button
                         aria-label={`${on ? "Revoke" : "Grant"} ${t} for ${r}`}
                         onClick={() => toggle(r, t)}
-                        className={`inline-grid h-6 w-6 place-items-center rounded-md border ${
-                          on ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-300" : "border-ink-600 text-fog-500"
-                        }`}
+                        className={`inline-grid h-6 w-6 place-items-center rounded-md border ${on ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-300" : "border-ink-600 text-fog-500"
+                          }`}
                       >
                         {on ? <Check className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}
                       </button>
@@ -117,7 +116,7 @@ export default function AccessPage() {
     <div>
       <PageHeader
         title="Role & Access Management"
-        description="Identities and roles are resolved from server-side records on every request. Changing a user's role or status immediately revokes their sessions."
+
         actions={
           <Button variant="primary" icon={<UserPlus className="h-4 w-4" />} onClick={() => setAdding(true)}>
             Add user

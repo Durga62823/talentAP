@@ -11,6 +11,7 @@ import re
 import sqlite3
 import threading
 import time
+from collections import OrderedDict
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
@@ -30,6 +31,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.engine import URL, Engine
+from sqlalchemy.pool import QueuePool
 
 from .config import get_settings
 from .metadb import DbConnection
@@ -90,11 +92,45 @@ class TargetAdapter:
     default_schema: str
     import_schema: str | None = None  # where reviewed CSV imports are created (default_schema if None)
 
+    # Raw (pre-masking) results of validated SQL, keyed by the rewritten SQL text. Masking,
+    # authorisation and audit still run per request; only the database round trip is skipped.
+    # The SQLite target is a private read-only copy, so its results stay valid until an import;
+    # external servers may change underneath us, so they get a short TTL.
+    RESULT_CACHE_SIZE = 128
+    result_ttl_s = 30.0
+
     def __init__(self, conn: DbConnection):
         self.conn = conn
         self.allowed_schemas = [s.lower() for s in (conn.allowed_schemas or [self.default_schema])]
         self._read_engine: Engine | None = None
         self._write_engine: Engine | None = None
+        self._results: OrderedDict[tuple[str, int], tuple[float, list[str], list[tuple[Any, ...]]]] = OrderedDict()
+        self._results_lock = threading.Lock()
+        self.cache_hits = 0
+        self.cache_misses = 0
+
+    def execute_cached(self, sql: str, timeout_ms: int, max_rows: int) -> tuple[list[str], list[tuple[Any, ...]], bool]:
+        """execute_readonly with a small LRU+TTL result cache. Returns (names, rows, cache_hit)."""
+        key = (sql, max_rows)
+        now = time.monotonic()
+        with self._results_lock:
+            hit = self._results.get(key)
+            if hit and now - hit[0] < self.result_ttl_s:
+                self._results.move_to_end(key)
+                self.cache_hits += 1
+                return hit[1], hit[2], True
+        names, rows = self.execute_readonly(sql, timeout_ms, max_rows)
+        with self._results_lock:
+            self.cache_misses += 1
+            self._results[key] = (now, names, rows)
+            self._results.move_to_end(key)
+            while len(self._results) > self.RESULT_CACHE_SIZE:
+                self._results.popitem(last=False)
+        return names, rows, False
+
+    def invalidate_results(self) -> None:
+        with self._results_lock:
+            self._results.clear()
 
     # --- engines -------------------------------------------------------------------------
     def read_engine(self) -> Engine:
@@ -104,6 +140,7 @@ class TargetAdapter:
         raise NotImplementedError
 
     def dispose(self) -> None:
+        self.invalidate_results()
         for e in (self._read_engine, self._write_engine):
             if e is not None:
                 e.dispose()
@@ -210,6 +247,7 @@ class TargetAdapter:
             if rows:
                 names = [n for n, _ in columns]
                 c.execute(t.insert(), [dict(zip(names, r)) for r in rows])
+        self.invalidate_results()
         return len(rows)
 
 
@@ -229,6 +267,7 @@ class SQLiteAdapter(TargetAdapter):
     kind = "sqlite"
     sqlglot_dialect = "sqlite"
     default_schema = "main"
+    result_ttl_s = 300.0
 
     def __init__(self, conn: DbConnection):
         super().__init__(conn)
@@ -243,8 +282,16 @@ class SQLiteAdapter(TargetAdapter):
             if not self.path.exists():
                 raise ConnectorError("SQLite database file not found")
             uri = f"file:{self.path.as_posix()}?mode=ro"
+            # The "sqlite://" URL makes SQLAlchemy assume an in-memory DB and pick
+            # SingletonThreadPool, which closes connections still in use by other threads once
+            # more than 5 threads query at once (dashboards fire several queries in parallel).
+            # A file-backed read-only DB is safe to share across threads via a normal pool.
             self._read_engine = create_engine(
-                "sqlite://", creator=lambda: sqlite3.connect(uri, uri=True, check_same_thread=False)
+                "sqlite://",
+                creator=lambda: sqlite3.connect(uri, uri=True, check_same_thread=False),
+                poolclass=QueuePool,
+                pool_size=8,
+                max_overflow=8,
             )
         return self._read_engine
 

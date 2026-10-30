@@ -8,25 +8,25 @@ const PRESET_REPORTS = [
   {
     id: "channel_perf",
     title: "Payment Channel Performance & Velocity Report",
-    description: "Audited transaction volumes, total counts, and average ticket sizes across all payment rails.",
+
     sql: "SELECT channel, COUNT(*) AS txn_count, SUM(amount_inr) AS total_volume_inr, AVG(amount_inr) AS avg_ticket_size_inr FROM transactions GROUP BY channel ORDER BY total_volume_inr DESC",
   },
   {
     id: "status_ratio",
     title: "Channel Failure & Success Analysis Report",
-    description: "Transaction completion and failure breakdown across payment channels.",
+
     sql: "SELECT channel, txn_status, COUNT(*) AS count, SUM(amount_inr) AS volume FROM transactions GROUP BY channel, txn_status ORDER BY channel",
   },
   {
     id: "segment_summary",
     title: "Customer Segment Aggregate Demographics",
-    description: "Distribution of customer accounts across banking tiers and risk classifications.",
+
     sql: "SELECT segment, risk_cat, COUNT(*) AS customer_count FROM customers GROUP BY segment, risk_cat ORDER BY customer_count DESC",
   },
   {
     id: "branch_summary",
     title: "Core Branch Account Concentration",
-    description: "Account distribution by branch identifier ($k \\ge 5$ threshold enforced).",
+
     sql: "SELECT branch_code, acct_type, COUNT(*) AS total_accounts FROM accounts GROUP BY branch_code, acct_type ORDER BY branch_code LIMIT 40",
   },
 ];
@@ -112,17 +112,16 @@ export default function AnalystReports() {
               setActiveReportId(r.id);
               handleGenerate(r);
             }}
-            className={`cursor-pointer rounded-xl border p-4 transition-all ${
-              activeReportId === r.id
-                ? "border-cyan bg-cyan/10 shadow-lg shadow-cyan/5"
-                : "border-ink-700 bg-ink-900/40 hover:border-ink-600 hover:bg-ink-800/40"
-            }`}
+            className={`cursor-pointer rounded-xl border p-4 transition-all ${activeReportId === r.id
+              ? "border-cyan bg-cyan/10 shadow-lg shadow-cyan/5"
+              : "border-ink-700 bg-ink-900/40 hover:border-ink-600 hover:bg-ink-800/40"
+              }`}
           >
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-fog-100">{r.title}</span>
               <FileSpreadsheet className={`h-4 w-4 ${activeReportId === r.id ? "text-cyan" : "text-fog-400"}`} />
             </div>
-            <p className="mt-1.5 text-xs text-fog-400 leading-relaxed">{r.description}</p>
+            {/* <p className="mt-1.5 text-xs text-fog-400 leading-relaxed">{r.description}</p> */}
             <div className="mt-3 flex items-center justify-between">
               <Badge tone="cyan">k ≥ 5 Guaranteed</Badge>
               <span className="text-xs font-medium text-cyan hover:underline">

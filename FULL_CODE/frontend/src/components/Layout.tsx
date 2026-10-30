@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import {
   Activity,
+  BrainCircuit,
   BarChart3,
   Database,
   FileSpreadsheet,
@@ -15,13 +16,14 @@ import {
   Search,
   Settings,
   SlidersHorizontal,
-  TerminalSquare,
   TrendingUp,
   UserCheck,
   Users,
 } from "lucide-react";
+import { Suspense } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { getRoleHome, useAuth } from "../lib/auth";
+import { Spinner } from "./ui";
 import { KIND_LABEL, useConnections } from "../lib/connections";
 
 export type NavItem = {
@@ -35,6 +37,7 @@ export const ADMIN_NAV: NavItem[] = [
   { to: "/admin/overview", label: "Overview", icon: LayoutDashboard, end: true },
   { to: "/admin/users", label: "User Management", icon: Users },
   { to: "/admin/discovery", label: "Data Discovery", icon: Radar },
+  { to: "/admin/ml-model", label: "ML Model", icon: BrainCircuit },
   { to: "/admin/policies", label: "Masking Policies", icon: SlidersHorizontal },
   { to: "/admin/connections", label: "Database & Tables", icon: Database },
   { to: "/admin/audit", label: "Audit Center", icon: ScrollText },
@@ -62,6 +65,7 @@ export const ANALYST_NAV: NavItem[] = [
 export const COMPLIANCE_NAV: NavItem[] = [
   { to: "/admin/overview", label: "Overview", icon: LayoutDashboard, end: true },
   { to: "/admin/discovery", label: "Data Discovery", icon: Radar },
+  { to: "/admin/ml-model", label: "ML Model", icon: BrainCircuit },
   { to: "/admin/policies", label: "Masking Policies", icon: SlidersHorizontal },
   { to: "/admin/audit", label: "Audit Center", icon: ScrollText },
   { to: "/admin/integrity", label: "Integrity Verification", icon: Fingerprint },
@@ -96,10 +100,10 @@ export default function Layout() {
     role === "support"
       ? SUPPORT_NAV
       : role === "analyst"
-      ? ANALYST_NAV
-      : role === "compliance"
-      ? COMPLIANCE_NAV
-      : ADMIN_NAV;
+        ? ANALYST_NAV
+        : role === "compliance"
+          ? COMPLIANCE_NAV
+          : ADMIN_NAV;
 
   const roleHome = getRoleHome(role);
 
@@ -107,10 +111,10 @@ export default function Layout() {
     role === "support"
       ? "Customer Privacy Mode · PII Masked"
       : role === "analyst"
-      ? "Differential Privacy & k ≥ 5 Enforced"
-      : role === "compliance"
-      ? "Audit & Integrity Review Mode"
-      : "Server-side masking active · Audit chain intact";
+        ? "Differential Privacy & k ≥ 5 Enforced"
+        : role === "compliance"
+          ? "Audit & Integrity Review Mode"
+          : "Server-side masking active · Audit chain intact";
 
   return (
     <div className="flex h-full">
@@ -118,7 +122,7 @@ export default function Layout() {
       <aside className="hidden w-64 shrink-0 flex-col border-r border-ink-700/80 bg-ink-900/80 lg:flex">
         <Link to={roleHome} className="flex items-center gap-3 px-5 py-5 transition-opacity hover:opacity-90">
           <img
-            src="/logo-emblem.png"
+            src="/logo-emblem-128.png"
             alt="Dream Guard Shield"
             className="h-10 w-10 shrink-0 object-contain drop-shadow-[0_2px_10px_rgba(249,115,22,0.25)]"
           />
@@ -150,8 +154,8 @@ export default function Layout() {
                     ? role === "support"
                       ? "bg-amber-400/10 text-amber-200 ring-1 ring-inset ring-amber-400/30"
                       : role === "analyst"
-                      ? "bg-cyan/10 text-cyan ring-1 ring-inset ring-cyan/30"
-                      : "bg-accent/10 text-fog-100 ring-1 ring-inset ring-accent/30"
+                        ? "bg-cyan/10 text-cyan ring-1 ring-inset ring-cyan/30"
+                        : "bg-accent/10 text-fog-100 ring-1 ring-inset ring-accent/30"
                     : "text-fog-400 hover:bg-ink-800 hover:text-fog-100",
                 )
               }
@@ -165,8 +169,8 @@ export default function Layout() {
                         ? role === "support"
                           ? "text-amber-300"
                           : role === "analyst"
-                          ? "text-cyan"
-                          : "text-[#A8ADFF]"
+                            ? "text-cyan"
+                            : "text-[#A8ADFF]"
                         : "text-fog-500 group-hover:text-fog-300",
                     )}
                   />
@@ -176,26 +180,7 @@ export default function Layout() {
             </NavLink>
           ))}
 
-          {/* Internal Console Link ONLY for Admin (discrete, at bottom of nav) */}
-          {role === "admin" && (
-            <div className="pt-4 mt-4 border-t border-ink-800">
-              <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-fog-500">
-                Internal Developer Utility
-              </div>
-              <NavLink
-                to="/admin/playground"
-                className={({ isActive }) =>
-                  clsx(
-                    "group flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-[12px] font-medium text-fog-400 hover:bg-ink-800 hover:text-fog-200",
-                    isActive && "bg-ink-800 text-fog-100",
-                  )
-                }
-              >
-                <TerminalSquare className="h-3.5 w-3.5 text-fog-500 group-hover:text-fog-300" />
-                Raw SQL Console (Internal)
-              </NavLink>
-            </div>
-          )}
+
         </nav>
 
         {/* Sidebar Footer Status */}
@@ -213,7 +198,7 @@ export default function Layout() {
         <header className="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-ink-700/80 bg-ink-900/60 px-4 backdrop-blur lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
             <Link to={roleHome} className="flex items-center gap-2 lg:hidden shrink-0" title="Dream Guard">
-              <img src="/logo-emblem.png" alt="Dream Guard" className="h-7 w-7 object-contain drop-shadow-[0_1px_4px_rgba(249,115,22,0.3)]" />
+              <img src="/logo-emblem-128.png" alt="Dream Guard" className="h-7 w-7 object-contain drop-shadow-[0_1px_4px_rgba(249,115,22,0.3)]" />
             </Link>
             <label htmlFor="db-select" className="hidden text-xs text-fog-500 sm:block">
               Database
@@ -239,8 +224,8 @@ export default function Layout() {
                   selected.status === "healthy"
                     ? "bg-emerald-400"
                     : selected.status === "unhealthy"
-                    ? "bg-rose-400"
-                    : "bg-fog-500",
+                      ? "bg-rose-400"
+                      : "bg-fog-500",
                 )}
                 title={`Status: ${selected.status}`}
               />
@@ -286,7 +271,9 @@ export default function Layout() {
         {/* Page View Container */}
         <main className="min-h-0 flex-1 overflow-y-auto">
           <div className="mx-auto max-w-[1400px] px-4 py-6 lg:px-8 lg:py-8">
-            <Outlet />
+            <Suspense fallback={<div className="grid h-64 place-items-center"><Spinner label="Loading…" /></div>}>
+              <Outlet />
+            </Suspense>
           </div>
         </main>
       </div>

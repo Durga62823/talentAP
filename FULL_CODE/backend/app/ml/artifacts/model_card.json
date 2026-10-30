@@ -1,0 +1,2208 @@
+{
+  "version": "pii-ml-v1",
+  "trained_at": "2026-10-30T11:24:34+00:00",
+  "sklearn_version": "1.9.1",
+  "seed": 7,
+  "algorithm": "Stacked: TF-IDF char n-gram logistic regression on column names -> gradient-boosted trees on sanitized value statistics + name probabilities, isotonic-calibrated (5-fold).",
+  "training_data": {
+    "source": "fully synthetic (Faker en_IN / en_US); no real or official data",
+    "columns": 4700,
+    "per_class": {
+      "ACCOUNT_NUMBER": 260,
+      "BANK_ACCOUNT": 223,
+      "CREDIT_CARD": 231,
+      "CREDIT_SCORE": 235,
+      "CUSTOMER_ID": 225,
+      "DATE_OF_BIRTH": 175,
+      "EMAIL": 243,
+      "FINANCIAL_AMOUNT": 241,
+      "FREE_TEXT_PII": 306,
+      "NATIONAL_ID": 215,
+      "NONE": 1242,
+      "ORG_CONTACT": 175,
+      "PERSON_NAME": 187,
+      "PHONE": 244,
+      "POSTAL_ADDRESS": 323,
+      "UPI_ID": 175
+    },
+    "excluded_names": "exact column names of the evaluation set",
+    "test_split": "grouped by column name: synthetic test names never appear in training"
+  },
+  "categories": [
+    "CREDIT_CARD",
+    "NATIONAL_ID",
+    "BANK_ACCOUNT",
+    "EMAIL",
+    "PHONE",
+    "PERSON_NAME",
+    "POSTAL_ADDRESS",
+    "DATE_OF_BIRTH",
+    "FREE_TEXT_PII",
+    "UPI_ID",
+    "ACCOUNT_NUMBER",
+    "FINANCIAL_AMOUNT",
+    "CREDIT_SCORE",
+    "CUSTOMER_ID",
+    "ORG_CONTACT",
+    "NONE"
+  ],
+  "synthetic_test": {
+    "accuracy": 0.9823,
+    "macro_f1": 0.9193,
+    "per_class": [
+      {
+        "category": "ACCOUNT_NUMBER",
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 0
+      },
+      {
+        "category": "BANK_ACCOUNT",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 37
+      },
+      {
+        "category": "CREDIT_CARD",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 29
+      },
+      {
+        "category": "CUSTOMER_ID",
+        "precision": 0.962,
+        "recall": 0.714,
+        "f1": 0.82,
+        "support": 35
+      },
+      {
+        "category": "DATE_OF_BIRTH",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 85
+      },
+      {
+        "category": "EMAIL",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 17
+      },
+      {
+        "category": "FINANCIAL_AMOUNT",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 8
+      },
+      {
+        "category": "FREE_TEXT_PII",
+        "precision": 0.986,
+        "recall": 1.0,
+        "f1": 0.993,
+        "support": 69
+      },
+      {
+        "category": "NATIONAL_ID",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 45
+      },
+      {
+        "category": "NONE",
+        "precision": 0.975,
+        "recall": 0.98,
+        "f1": 0.977,
+        "support": 391
+      },
+      {
+        "category": "ORG_CONTACT",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 62
+      },
+      {
+        "category": "PERSON_NAME",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 73
+      },
+      {
+        "category": "PHONE",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 16
+      },
+      {
+        "category": "POSTAL_ADDRESS",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 67
+      },
+      {
+        "category": "UPI_ID",
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 85
+      }
+    ],
+    "calibration": {
+      "expected_calibration_error": 0.0675,
+      "bins": [
+        {
+          "bin": "0.4-0.5",
+          "count": 3,
+          "mean_confidence": 0.439,
+          "accuracy": 1.0
+        },
+        {
+          "bin": "0.5-0.6",
+          "count": 13,
+          "mean_confidence": 0.542,
+          "accuracy": 0.385
+        },
+        {
+          "bin": "0.6-0.7",
+          "count": 104,
+          "mean_confidence": 0.627,
+          "accuracy": 0.933
+        },
+        {
+          "bin": "0.7-0.8",
+          "count": 53,
+          "mean_confidence": 0.774,
+          "accuracy": 0.962
+        },
+        {
+          "bin": "0.8-0.9",
+          "count": 95,
+          "mean_confidence": 0.828,
+          "accuracy": 0.989
+        },
+        {
+          "bin": "0.9-1.0",
+          "count": 751,
+          "mean_confidence": 0.989,
+          "accuracy": 1.0
+        }
+      ]
+    },
+    "confusion_matrix": {
+      "labels": [
+        "ACCOUNT_NUMBER",
+        "BANK_ACCOUNT",
+        "CREDIT_CARD",
+        "CREDIT_SCORE",
+        "CUSTOMER_ID",
+        "DATE_OF_BIRTH",
+        "EMAIL",
+        "FINANCIAL_AMOUNT",
+        "FREE_TEXT_PII",
+        "NATIONAL_ID",
+        "NONE",
+        "ORG_CONTACT",
+        "PERSON_NAME",
+        "PHONE",
+        "POSTAL_ADDRESS",
+        "UPI_ID"
+      ],
+      "matrix": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          37,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          29,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          25,
+          0,
+          0,
+          0,
+          0,
+          0,
+          10,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          85,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          17,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          8,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          69,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          45,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          6,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          1,
+          0,
+          383,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          62,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          73,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          16,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          67,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          85
+        ]
+      ]
+    },
+    "ml_sensitive_detection": {
+      "precision": 0.987,
+      "recall": 1.0,
+      "f1": 0.9935,
+      "missed_sensitive": 0,
+      "false_alarms": 7
+    },
+    "rules": {
+      "accuracy": 0.9254,
+      "sensitive_detection": {
+        "precision": 0.9632,
+        "recall": 0.9379,
+        "f1": 0.9504,
+        "missed_sensitive": 33,
+        "false_alarms": 19
+      }
+    }
+  },
+  "saffron_evaluation": {
+    "columns": 120,
+    "ml": {
+      "accuracy": 0.9583,
+      "sensitive_detection": {
+        "precision": 0.9744,
+        "recall": 1.0,
+        "f1": 0.987,
+        "missed_sensitive": 0,
+        "false_alarms": 1
+      }
+    },
+    "rules": {
+      "accuracy": 1.0,
+      "sensitive_detection": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "missed_sensitive": 0,
+        "false_alarms": 0
+      }
+    },
+    "combined_upgrade_only": {
+      "accuracy": 1.0,
+      "sensitive_detection": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "missed_sensitive": 0,
+        "false_alarms": 0
+      }
+    },
+    "columns_detail": [
+      {
+        "table": "accounts",
+        "column": "account_no",
+        "label": "ACCOUNT_NUMBER",
+        "acceptable": [
+          "ACCOUNT_NUMBER"
+        ],
+        "ml": "NATIONAL_ID",
+        "ml_confidence": 0.428,
+        "rule": "ACCOUNT_NUMBER",
+        "ml_correct": false,
+        "rule_correct": true
+      },
+      {
+        "table": "accounts",
+        "column": "customer_id",
+        "label": "CUSTOMER_ID",
+        "acceptable": [
+          "CUSTOMER_ID"
+        ],
+        "ml": "CUSTOMER_ID",
+        "ml_confidence": 0.755,
+        "rule": "CUSTOMER_ID",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "accounts",
+        "column": "branch_code",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "accounts",
+        "column": "ifsc",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.742,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "accounts",
+        "column": "acct_type",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "accounts",
+        "column": "curr_bal",
+        "label": "FINANCIAL_AMOUNT",
+        "acceptable": [
+          "FINANCIAL_AMOUNT"
+        ],
+        "ml": "FINANCIAL_AMOUNT",
+        "ml_confidence": 0.986,
+        "rule": "FINANCIAL_AMOUNT",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "accounts",
+        "column": "open_dt",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "accounts",
+        "column": "acct_status",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.896,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "accounts",
+        "column": "nominee_nm",
+        "label": "PERSON_NAME",
+        "acceptable": [
+          "PERSON_NAME"
+        ],
+        "ml": "PERSON_NAME",
+        "ml_confidence": 0.669,
+        "rule": "PERSON_NAME",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "accounts",
+        "column": "nominee_rel",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "accounts",
+        "column": "od_limit_inr",
+        "label": "FINANCIAL_AMOUNT",
+        "acceptable": [
+          "FINANCIAL_AMOUNT"
+        ],
+        "ml": "FINANCIAL_AMOUNT",
+        "ml_confidence": 0.676,
+        "rule": "FINANCIAL_AMOUNT",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "accounts",
+        "column": "int_rate_pct",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.949,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "accounts",
+        "column": "extra_info",
+        "label": "FREE_TEXT_PII",
+        "acceptable": [
+          "FREE_TEXT_PII"
+        ],
+        "ml": "FREE_TEXT_PII",
+        "ml_confidence": 0.807,
+        "rule": "FREE_TEXT_PII",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "accounts",
+        "column": "last_txn_dt",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "branches",
+        "column": "branch_code",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "branches",
+        "column": "ifsc",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.626,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "branches",
+        "column": "branch_nm",
+        "label": "NONE",
+        "acceptable": [
+          "NONE",
+          "ORG_CONTACT"
+        ],
+        "ml": "ORG_CONTACT",
+        "ml_confidence": 0.509,
+        "rule": "ORG_CONTACT",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "branches",
+        "column": "addr",
+        "label": "ORG_CONTACT",
+        "acceptable": [
+          "NONE",
+          "ORG_CONTACT"
+        ],
+        "ml": "ORG_CONTACT",
+        "ml_confidence": 0.568,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "branches",
+        "column": "city",
+        "label": "NONE",
+        "acceptable": [
+          "NONE",
+          "ORG_CONTACT"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "branches",
+        "column": "state",
+        "label": "NONE",
+        "acceptable": [
+          "NONE",
+          "ORG_CONTACT"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "branches",
+        "column": "pincode",
+        "label": "NONE",
+        "acceptable": [
+          "NONE",
+          "ORG_CONTACT"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "branches",
+        "column": "branch_phone",
+        "label": "ORG_CONTACT",
+        "acceptable": [
+          "ORG_CONTACT"
+        ],
+        "ml": "ORG_CONTACT",
+        "ml_confidence": 0.943,
+        "rule": "ORG_CONTACT",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "branches",
+        "column": "branch_email",
+        "label": "ORG_CONTACT",
+        "acceptable": [
+          "ORG_CONTACT"
+        ],
+        "ml": "EMAIL",
+        "ml_confidence": 0.793,
+        "rule": "ORG_CONTACT",
+        "ml_correct": false,
+        "rule_correct": true
+      },
+      {
+        "table": "branches",
+        "column": "region",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "branches",
+        "column": "opened_on",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.537,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "cards",
+        "column": "CARD_REF",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.925,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "cards",
+        "column": "CUSTOMER_ID",
+        "label": "CUSTOMER_ID",
+        "acceptable": [
+          "CUSTOMER_ID"
+        ],
+        "ml": "CUSTOMER_ID",
+        "ml_confidence": 0.755,
+        "rule": "CUSTOMER_ID",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "cards",
+        "column": "LINKED_ACCT",
+        "label": "ACCOUNT_NUMBER",
+        "acceptable": [
+          "ACCOUNT_NUMBER"
+        ],
+        "ml": "NATIONAL_ID",
+        "ml_confidence": 0.429,
+        "rule": "ACCOUNT_NUMBER",
+        "ml_correct": false,
+        "rule_correct": true
+      },
+      {
+        "table": "cards",
+        "column": "CARD_NO",
+        "label": "CREDIT_CARD",
+        "acceptable": [
+          "CREDIT_CARD"
+        ],
+        "ml": "CREDIT_CARD",
+        "ml_confidence": 0.999,
+        "rule": "CREDIT_CARD",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "cards",
+        "column": "CARD_NETWORK",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.904,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "cards",
+        "column": "CARD_TYPE",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "cards",
+        "column": "CARD_VARIANT",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.998,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "cards",
+        "column": "NAME_ON_CARD",
+        "label": "PERSON_NAME",
+        "acceptable": [
+          "PERSON_NAME"
+        ],
+        "ml": "PERSON_NAME",
+        "ml_confidence": 0.788,
+        "rule": "PERSON_NAME",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "cards",
+        "column": "EXP_MM",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "cards",
+        "column": "EXP_YYYY",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "cards",
+        "column": "CREDIT_LIMIT",
+        "label": "FINANCIAL_AMOUNT",
+        "acceptable": [
+          "FINANCIAL_AMOUNT"
+        ],
+        "ml": "FINANCIAL_AMOUNT",
+        "ml_confidence": 0.668,
+        "rule": "FINANCIAL_AMOUNT",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "cards",
+        "column": "OUTSTANDING_AMT",
+        "label": "FINANCIAL_AMOUNT",
+        "acceptable": [
+          "FINANCIAL_AMOUNT"
+        ],
+        "ml": "FINANCIAL_AMOUNT",
+        "ml_confidence": 0.914,
+        "rule": "FINANCIAL_AMOUNT",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "cards",
+        "column": "CARD_STATUS",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.997,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "cards",
+        "column": "ISSUED_ON",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "customer_id",
+        "label": "CUSTOMER_ID",
+        "acceptable": [
+          "CUSTOMER_ID"
+        ],
+        "ml": "CUSTOMER_ID",
+        "ml_confidence": 0.755,
+        "rule": "CUSTOMER_ID",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "cust_nm",
+        "label": "PERSON_NAME",
+        "acceptable": [
+          "PERSON_NAME"
+        ],
+        "ml": "PERSON_NAME",
+        "ml_confidence": 0.941,
+        "rule": "PERSON_NAME",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "gender",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "dob_dt",
+        "label": "DATE_OF_BIRTH",
+        "acceptable": [
+          "DATE_OF_BIRTH"
+        ],
+        "ml": "DATE_OF_BIRTH",
+        "ml_confidence": 0.999,
+        "rule": "DATE_OF_BIRTH",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "mob_no",
+        "label": "PHONE",
+        "acceptable": [
+          "PHONE"
+        ],
+        "ml": "PHONE",
+        "ml_confidence": 0.999,
+        "rule": "PHONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "emailid",
+        "label": "EMAIL",
+        "acceptable": [
+          "EMAIL"
+        ],
+        "ml": "EMAIL",
+        "ml_confidence": 0.603,
+        "rule": "EMAIL",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "addr_line1",
+        "label": "POSTAL_ADDRESS",
+        "acceptable": [
+          "POSTAL_ADDRESS"
+        ],
+        "ml": "POSTAL_ADDRESS",
+        "ml_confidence": 0.811,
+        "rule": "POSTAL_ADDRESS",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "addr_line2",
+        "label": "POSTAL_ADDRESS",
+        "acceptable": [
+          "POSTAL_ADDRESS"
+        ],
+        "ml": "PERSON_NAME",
+        "ml_confidence": 0.786,
+        "rule": "POSTAL_ADDRESS",
+        "ml_correct": false,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "city",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.998,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "state",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "pincode",
+        "label": "NONE",
+        "acceptable": [
+          "NONE",
+          "POSTAL_ADDRESS"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "pita_nm",
+        "label": "PERSON_NAME",
+        "acceptable": [
+          "PERSON_NAME"
+        ],
+        "ml": "PERSON_NAME",
+        "ml_confidence": 0.743,
+        "rule": "PERSON_NAME",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "alt_mob",
+        "label": "PHONE",
+        "acceptable": [
+          "PHONE"
+        ],
+        "ml": "PHONE",
+        "ml_confidence": 0.958,
+        "rule": "PHONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "occupation",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "segment",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "risk_cat",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "home_branch",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "customer_since",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.994,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "preferred_lang",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "customers",
+        "column": "last_login_ts",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "international_customers",
+        "column": "customer_id",
+        "label": "CUSTOMER_ID",
+        "acceptable": [
+          "CUSTOMER_ID"
+        ],
+        "ml": "CUSTOMER_ID",
+        "ml_confidence": 0.602,
+        "rule": "CUSTOMER_ID",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "international_customers",
+        "column": "ssn",
+        "label": "NATIONAL_ID",
+        "acceptable": [
+          "NATIONAL_ID"
+        ],
+        "ml": "NATIONAL_ID",
+        "ml_confidence": 0.784,
+        "rule": "NATIONAL_ID",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "international_customers",
+        "column": "us_addr",
+        "label": "POSTAL_ADDRESS",
+        "acceptable": [
+          "POSTAL_ADDRESS"
+        ],
+        "ml": "POSTAL_ADDRESS",
+        "ml_confidence": 0.811,
+        "rule": "POSTAL_ADDRESS",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "international_customers",
+        "column": "us_city",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "international_customers",
+        "column": "us_state",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "international_customers",
+        "column": "us_zip",
+        "label": "NONE",
+        "acceptable": [
+          "NONE",
+          "POSTAL_ADDRESS"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "international_customers",
+        "column": "us_phone",
+        "label": "PHONE",
+        "acceptable": [
+          "PHONE"
+        ],
+        "ml": "PHONE",
+        "ml_confidence": 0.999,
+        "rule": "PHONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "international_customers",
+        "column": "residency_status",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "international_customers",
+        "column": "fatca_flag",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.996,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "international_customers",
+        "column": "tax_form",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "international_customers",
+        "column": "tin_country",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.985,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "international_customers",
+        "column": "fatca_reported_on",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "kyc_records",
+        "column": "kyc_id",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.654,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "kyc_records",
+        "column": "customer_id",
+        "label": "CUSTOMER_ID",
+        "acceptable": [
+          "CUSTOMER_ID"
+        ],
+        "ml": "CUSTOMER_ID",
+        "ml_confidence": 0.72,
+        "rule": "CUSTOMER_ID",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "kyc_records",
+        "column": "pan_no",
+        "label": "NATIONAL_ID",
+        "acceptable": [
+          "NATIONAL_ID"
+        ],
+        "ml": "NATIONAL_ID",
+        "ml_confidence": 0.678,
+        "rule": "NATIONAL_ID",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "kyc_records",
+        "column": "aadhaar_no",
+        "label": "NATIONAL_ID",
+        "acceptable": [
+          "NATIONAL_ID"
+        ],
+        "ml": "NATIONAL_ID",
+        "ml_confidence": 0.961,
+        "rule": "NATIONAL_ID",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "kyc_records",
+        "column": "ovd_type",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "kyc_records",
+        "column": "kyc_status",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "kyc_records",
+        "column": "kyc_mode",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.969,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "kyc_records",
+        "column": "verified_on",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "kyc_records",
+        "column": "verified_by",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "kyc_records",
+        "column": "next_review_dt",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "kyc_records",
+        "column": "kyc_meta",
+        "label": "FREE_TEXT_PII",
+        "acceptable": [
+          "FREE_TEXT_PII",
+          "NONE"
+        ],
+        "ml": "FREE_TEXT_PII",
+        "ml_confidence": 0.997,
+        "rule": "FREE_TEXT_PII",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "app_id",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.849,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "customer_id",
+        "label": "CUSTOMER_ID",
+        "acceptable": [
+          "CUSTOMER_ID"
+        ],
+        "ml": "CUSTOMER_ID",
+        "ml_confidence": 0.729,
+        "rule": "CUSTOMER_ID",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "loan_type",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "applied_on",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "amt_requested_inr",
+        "label": "FINANCIAL_AMOUNT",
+        "acceptable": [
+          "FINANCIAL_AMOUNT"
+        ],
+        "ml": "FINANCIAL_AMOUNT",
+        "ml_confidence": 0.633,
+        "rule": "FINANCIAL_AMOUNT",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "tenure_mths",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "declared_income_inr",
+        "label": "FINANCIAL_AMOUNT",
+        "acceptable": [
+          "FINANCIAL_AMOUNT"
+        ],
+        "ml": "FINANCIAL_AMOUNT",
+        "ml_confidence": 0.713,
+        "rule": "FINANCIAL_AMOUNT",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "employer_nm",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "emp_type",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "credit_score",
+        "label": "CREDIT_SCORE",
+        "acceptable": [
+          "CREDIT_SCORE"
+        ],
+        "ml": "CREDIT_SCORE",
+        "ml_confidence": 0.946,
+        "rule": "CREDIT_SCORE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "decision",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "sanctioned_amt_inr",
+        "label": "FINANCIAL_AMOUNT",
+        "acceptable": [
+          "FINANCIAL_AMOUNT"
+        ],
+        "ml": "FINANCIAL_AMOUNT",
+        "ml_confidence": 0.708,
+        "rule": "FINANCIAL_AMOUNT",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "roi_pct",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.911,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "col_7",
+        "label": "NATIONAL_ID",
+        "acceptable": [
+          "NATIONAL_ID"
+        ],
+        "ml": "NATIONAL_ID",
+        "ml_confidence": 0.717,
+        "rule": "NATIONAL_ID",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "loan_applications",
+        "column": "remarks",
+        "label": "FREE_TEXT_PII",
+        "acceptable": [
+          "FREE_TEXT_PII"
+        ],
+        "ml": "FREE_TEXT_PII",
+        "ml_confidence": 0.997,
+        "rule": "FREE_TEXT_PII",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "support_tickets",
+        "column": "ticket_id",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.905,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "support_tickets",
+        "column": "customer_id",
+        "label": "CUSTOMER_ID",
+        "acceptable": [
+          "CUSTOMER_ID"
+        ],
+        "ml": "CUSTOMER_ID",
+        "ml_confidence": 0.709,
+        "rule": "CUSTOMER_ID",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "support_tickets",
+        "column": "created_ts",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "support_tickets",
+        "column": "channel",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "support_tickets",
+        "column": "category",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "support_tickets",
+        "column": "priority",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "support_tickets",
+        "column": "ticket_text",
+        "label": "FREE_TEXT_PII",
+        "acceptable": [
+          "FREE_TEXT_PII"
+        ],
+        "ml": "FREE_TEXT_PII",
+        "ml_confidence": 0.997,
+        "rule": "FREE_TEXT_PII",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "support_tickets",
+        "column": "notes",
+        "label": "FREE_TEXT_PII",
+        "acceptable": [
+          "FREE_TEXT_PII"
+        ],
+        "ml": "FREE_TEXT_PII",
+        "ml_confidence": 0.997,
+        "rule": "FREE_TEXT_PII",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "support_tickets",
+        "column": "status",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "support_tickets",
+        "column": "resolved_ts",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "support_tickets",
+        "column": "assigned_to",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.916,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "transactions",
+        "column": "txn_id",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.949,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "transactions",
+        "column": "account_no",
+        "label": "ACCOUNT_NUMBER",
+        "acceptable": [
+          "ACCOUNT_NUMBER"
+        ],
+        "ml": "NATIONAL_ID",
+        "ml_confidence": 0.428,
+        "rule": "ACCOUNT_NUMBER",
+        "ml_correct": false,
+        "rule_correct": true
+      },
+      {
+        "table": "transactions",
+        "column": "txn_ts",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "transactions",
+        "column": "amount_inr",
+        "label": "FINANCIAL_AMOUNT",
+        "acceptable": [
+          "FINANCIAL_AMOUNT"
+        ],
+        "ml": "FINANCIAL_AMOUNT",
+        "ml_confidence": 0.905,
+        "rule": "FINANCIAL_AMOUNT",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "transactions",
+        "column": "dr_cr",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "transactions",
+        "column": "channel",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "transactions",
+        "column": "counterparty",
+        "label": "PERSON_NAME",
+        "acceptable": [
+          "FREE_TEXT_PII",
+          "PERSON_NAME",
+          "UPI_ID"
+        ],
+        "ml": "UPI_ID",
+        "ml_confidence": 0.624,
+        "rule": "PERSON_NAME",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "transactions",
+        "column": "narration",
+        "label": "FREE_TEXT_PII",
+        "acceptable": [
+          "FREE_TEXT_PII"
+        ],
+        "ml": "FREE_TEXT_PII",
+        "ml_confidence": 0.81,
+        "rule": "FREE_TEXT_PII",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "transactions",
+        "column": "ref_no",
+        "label": "FREE_TEXT_PII",
+        "acceptable": [
+          "CREDIT_CARD",
+          "FREE_TEXT_PII"
+        ],
+        "ml": "FREE_TEXT_PII",
+        "ml_confidence": 0.425,
+        "rule": "FREE_TEXT_PII",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "transactions",
+        "column": "rrn",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.613,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "transactions",
+        "column": "bal_after",
+        "label": "FINANCIAL_AMOUNT",
+        "acceptable": [
+          "FINANCIAL_AMOUNT"
+        ],
+        "ml": "FINANCIAL_AMOUNT",
+        "ml_confidence": 0.999,
+        "rule": "FINANCIAL_AMOUNT",
+        "ml_correct": true,
+        "rule_correct": true
+      },
+      {
+        "table": "transactions",
+        "column": "txn_status",
+        "label": "NONE",
+        "acceptable": [
+          "NONE"
+        ],
+        "ml": "NONE",
+        "ml_confidence": 0.999,
+        "rule": "NONE",
+        "ml_correct": true,
+        "rule_correct": true
+      }
+    ]
+  },
+  "feature_importance": [
+    {
+      "feature": "person_name_shape_match_ratio",
+      "importance": 0.1194
+    },
+    {
+      "feature": "column name (character n-grams)",
+      "importance": 0.0972
+    },
+    {
+      "feature": "upi_handle_match_ratio",
+      "importance": 0.0833
+    },
+    {
+      "feature": "iban_checksum_valid_match_ratio",
+      "importance": 0.0633
+    },
+    {
+      "feature": "birth_year_ratio",
+      "importance": 0.0561
+    },
+    {
+      "feature": "credit_card_luhn_match_ratio",
+      "importance": 0.0478
+    },
+    {
+      "feature": "maximum_length",
+      "importance": 0.0361
+    },
+    {
+      "feature": "phone_match_ratio",
+      "importance": 0.03
+    },
+    {
+      "feature": "uppercase_char_ratio",
+      "importance": 0.03
+    },
+    {
+      "feature": "dtype_dec",
+      "importance": 0.0272
+    },
+    {
+      "feature": "minimum_length",
+      "importance": 0.0217
+    },
+    {
+      "feature": "free_text_with_embedded_entities_ratio",
+      "importance": 0.0183
+    },
+    {
+      "feature": "unique_ratio",
+      "importance": 0.0172
+    },
+    {
+      "feature": "address_shape_match_ratio",
+      "importance": 0.0167
+    },
+    {
+      "feature": "average_length",
+      "importance": 0.0139
+    }
+  ],
+  "decision_rule": "upgrade-only: applied only when more sensitive than the current classification, confidence >= threshold, and no human review exists",
+  "caveats": [
+    "Saffron labels were hand-written by the team (app/ml/eval/saffron_labels.csv); ambiguous columns accept several categories.",
+    "The synthetic test uses unseen column names but the same value generators as training, so it is still optimistic.",
+    "The rule engine was hand-tuned on the Saffron dataset, so its Saffron score is an upper bound, not a fair comparison.",
+    "Scans sample random rows, so predictions for sparse columns can vary between scans.",
+    "Confidence is calibrated on synthetic data; calibration on real schemas is not guaranteed.",
+    "Categories with only a few distinct column names can land entirely in training under the name-grouped split (e.g. ACCOUNT_NUMBER in v1), so their synthetic test score is n/a; check them on the Saffron table instead.",
+    "All-digit identifiers are often confused with national IDs (account numbers at ~43% confidence on Saffron); below the threshold, so they are never applied automatically.",
+    "Sparse free-text fields can be flagged from their shape (mostly empty, short notes) as well as their content: a learned prior that legacy note fields carry PII. The evidence panel shows which applied."
+  ],
+  "training_seconds": 237.1
+}

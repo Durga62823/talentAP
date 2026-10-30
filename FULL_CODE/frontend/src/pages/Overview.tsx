@@ -30,7 +30,7 @@ export default function OverviewPage() {
     <div>
       <PageHeader
         title="Security Overview"
-        description="Live posture across every registered data source. All figures come from persisted scans, policies and audit events."
+
         actions={
           <>
             <Link to="/discovery">
@@ -94,7 +94,7 @@ export default function OverviewPage() {
                   <Gauge className="h-4 w-4 text-fog-400" /> Exposure risk score
                 </span>
               }
-              subtitle="Transparent formula — lower is better"
+
             >
               <div className="flex items-end gap-3">
                 <div className="text-4xl font-semibold tabular-nums">{risk.score ?? "—"}</div>

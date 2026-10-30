@@ -65,7 +65,7 @@ def login(body: LoginIn, request: Request, response: Response, db: Session = Dep
     if not ok:
         _failures[key].append(now)
         audit.record(db, None, action="login_failed", outcome="denied", actor_name=body.username[:64],
-                     reason="invalid credentials or inactive account", correlation_id=corr(request))
+                    correlation_id=corr(request))
         raise HTTPException(status_code=401, detail="Invalid username or password")
     _failures.pop(key, None)
     token = create_session(db, user)

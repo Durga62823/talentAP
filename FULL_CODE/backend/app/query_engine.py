@@ -157,7 +157,7 @@ def run_query(
         return deny("connection_error", str(exc), 502)
 
     try:
-        names, rows = adapter.execute_readonly(plan.sql, settings.query_timeout_ms, settings.max_result_rows)
+        names, rows, cache_hit = adapter.execute_cached(plan.sql, settings.query_timeout_ms, settings.max_result_rows)
     except QueryTimeout as exc:
         return deny("timeout", str(exc), 408, plan.tables)
     except ConnectorError as exc:
@@ -202,6 +202,7 @@ def run_query(
             "break_glass": bool(break_glass_cols),
             "justification": (justification or "")[:300] if break_glass_cols else "",
             "min_group_enforced": plan.min_group_enforced,
+            "cache_hit": cache_hit,
         },
     )
     return QueryOutcome(
@@ -220,6 +221,7 @@ def run_query(
             "role": principal.role,
             "user": principal.username,
             "duration_ms": round(ms, 2),
+            "cache_hit": cache_hit,
             "audit_event_id": ev.id,
             "break_glass_columns": break_glass_cols,
         },

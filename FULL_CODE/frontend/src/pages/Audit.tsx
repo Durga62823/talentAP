@@ -66,7 +66,7 @@ export default function AuditPage() {
     <div>
       <PageHeader
         title="Security Audit"
-        description="Append-only through the application (no update/delete endpoints, database triggers block edits) and hash-chained for tamper evidence. This is not equivalent to external, tamper-proof WORM storage."
+
         actions={
           <>
             <Button icon={<Link2 className="h-4 w-4" />} onClick={() => chain.refetch()} loading={chain.isFetching}>Verify hash chain</Button>

@@ -2,19 +2,26 @@
 from __future__ import annotations
 
 import logging
+import os
+import time
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from . import metrics
 from .api import admin, audit_api, auth, databases, discovery, policies, query, uploads
 from .config import ROOT_DIR, get_settings
+from .connectors import _cache as _adapters
+from .connectors import _cache_lock as _adapter_lock
 from .metadb import SessionLocal
+from .security import Principal, require
 from .seed import ensure_initialised
 from .uploads import purge_expired
 
@@ -39,22 +46,33 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Credentialed CORS must name its origins: "*" or a catch-all regex would let any website
+# act with a visitor's session. The Vercel frontend proxies /api, so it needs no CORS entry.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_settings().cors_origins,
-    allow_origin_regex=r"^https?://.*",
+    allow_origins=[o for o in get_settings().cors_origins if o != "*"],
+    allow_origin_regex=os.environ.get("SENTINEL_CORS_ORIGIN_REGEX") or None,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"],
     allow_headers=["Content-Type", "Authorization", "X-Sentinel-CSRF", "X-Correlation-ID"],
-    expose_headers=["X-Correlation-ID"],
+    expose_headers=["X-Correlation-ID", "Server-Timing"],
 )
+# JSON payloads (classification lists, result sets) compress 5-10x; the free Render tier is
+# bandwidth-bound, so this is the cheapest latency win.
+app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=5)
 
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
     cid = request.headers.get("x-correlation-id", "")
     request.state.correlation_id = cid if cid.isalnum() and len(cid) <= 64 else uuid.uuid4().hex
+    started = time.perf_counter()
     response = await call_next(request)
+    ms = (time.perf_counter() - started) * 1000
+    if request.url.path.startswith("/api"):
+        route = request.scope.get("route")
+        metrics.observe(request.method, getattr(route, "path", "unmatched"), response.status_code, ms)
+        response.headers["Server-Timing"] = f"app;dur={ms:.1f}"
     response.headers["X-Correlation-ID"] = request.state.correlation_id
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
@@ -100,6 +118,17 @@ async def unhandled(request: Request, exc: Exception):
 @app.get("/api/health", tags=["health"])
 def health():
     return {"status": "ok", "service": "sentinelmask"}
+
+
+@app.get("/api/metrics", tags=["health"])
+def get_metrics(_: Principal = Depends(require("audit:read"))):
+    snap = metrics.snapshot()
+    with _adapter_lock:
+        adapters = list(_adapters.values())
+    hits = sum(a.cache_hits for a in adapters)
+    misses = sum(a.cache_misses for a in adapters)
+    snap["query_cache"] = {"hits": hits, "misses": misses, "hit_rate": round(hits / (hits + misses), 4) if hits + misses else 0.0}
+    return snap
 
 
 for r in (auth.router, databases.router, discovery.router, policies.router, query.router, uploads.router, audit_api.router, admin.router):

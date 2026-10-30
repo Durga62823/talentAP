@@ -88,14 +88,14 @@ export function getRoleHome(role?: string): string {
 // Demo-only passwords (one per role) - local demonstration environment only.
 export const DEMO_ACCOUNTS = [
   // Admin Identities
-  { username: "admin_anita", password: "Admin@2026!", role: "admin", label: "Anita Rao (Admin)", email: "admin_anita@saffronbank.example", blurb: "Full governance, PII discovery, policy lifecycle & break-glass access" },
+  { username: "admin_anita", password: "Admin@2026!", role: "admin", label: "Anita Rao (Admin)", email: "admin_anita@saffronbank.example" },
 
   // Support Identities
-  { username: "support_ravi", password: "Support@2026!", role: "support", label: "Ravi Kumar (Support)", email: "support_ravi@saffronbank.example", blurb: "Customer lookup, card verification (4111-XXXX-XXXX-1111) & ticket triage" },
+  { username: "support_ravi", password: "Support@2026!", role: "support", label: "Ravi Kumar (Support)", email: "support_ravi@saffronbank.example" },
 
 
   // Analyst Identities
-  { username: "analyst_kavya", password: "Analyst@2026!", role: "analyst", label: "Kavya Hegde (Analyst)", email: "analyst_kavya@saffronbank.example", blurb: "Differential privacy, k-anonymity (k>=5) & transaction channel trends" },
+  { username: "analyst_kavya", password: "Analyst@2026!", role: "analyst", label: "Kavya Hegde (Analyst)", email: "analyst_kavya@saffronbank.example" },
 
 
   // Compliance Identity

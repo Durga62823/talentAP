@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy } from "react";
 import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
@@ -9,32 +9,34 @@ import { ApiError } from "./lib/api";
 import { AuthProvider, getRoleHome, useAuth } from "./lib/auth";
 import { ConnectionProvider } from "./lib/connections";
 
+// Pages are code-split per route so a role only downloads the screens it opens.
 // Admin Pages
-import AuditPage from "./pages/Audit";
-import ConnectionsPage from "./pages/Connections";
-import DiscoveryPage from "./pages/Discovery";
-import IntegrityPage from "./pages/Integrity";
-import OverviewPage from "./pages/Overview";
-import PlaygroundPage from "./pages/Playground";
-import PoliciesPage from "./pages/Policies";
-import SettingsPage from "./pages/Settings";
-import UploadsPage from "./pages/Uploads";
-import UserManagement from "./pages/admin/UserManagement";
+const AuditPage = lazy(() => import("./pages/Audit"));
+const ConnectionsPage = lazy(() => import("./pages/Connections"));
+const DiscoveryPage = lazy(() => import("./pages/Discovery"));
+const IntegrityPage = lazy(() => import("./pages/Integrity"));
+const MlModelPage = lazy(() => import("./pages/MlModel"));
+const OverviewPage = lazy(() => import("./pages/Overview"));
+const PlaygroundPage = lazy(() => import("./pages/Playground"));
+const PoliciesPage = lazy(() => import("./pages/Policies"));
+const SettingsPage = lazy(() => import("./pages/Settings"));
+const UploadsPage = lazy(() => import("./pages/Uploads"));
+const UserManagement = lazy(() => import("./pages/admin/UserManagement"));
 
 // Support Pages
-import CustomerLookup from "./pages/support/CustomerLookup";
-import CustomerProfiles from "./pages/support/CustomerProfiles";
-import SupportActivity from "./pages/support/SupportActivity";
-import SupportOverview from "./pages/support/SupportOverview";
-import SupportTickets from "./pages/support/SupportTickets";
+const CustomerLookup = lazy(() => import("./pages/support/CustomerLookup"));
+const CustomerProfiles = lazy(() => import("./pages/support/CustomerProfiles"));
+const SupportActivity = lazy(() => import("./pages/support/SupportActivity"));
+const SupportOverview = lazy(() => import("./pages/support/SupportOverview"));
+const SupportTickets = lazy(() => import("./pages/support/SupportTickets"));
 
 // Analyst Pages
-import AggregateExplorer from "./pages/analyst/AggregateExplorer";
-import AnalystActivity from "./pages/analyst/AnalystActivity";
-import AnalystAnalytics from "./pages/analyst/AnalystAnalytics";
-import AnalystOverview from "./pages/analyst/AnalystOverview";
-import AnalystReports from "./pages/analyst/AnalystReports";
-import AnalystTrends from "./pages/analyst/AnalystTrends";
+const AggregateExplorer = lazy(() => import("./pages/analyst/AggregateExplorer"));
+const AnalystActivity = lazy(() => import("./pages/analyst/AnalystActivity"));
+const AnalystAnalytics = lazy(() => import("./pages/analyst/AnalystAnalytics"));
+const AnalystOverview = lazy(() => import("./pages/analyst/AnalystOverview"));
+const AnalystReports = lazy(() => import("./pages/analyst/AnalystReports"));
+const AnalystTrends = lazy(() => import("./pages/analyst/AnalystTrends"));
 
 import LoginPage from "./pages/Login";
 
@@ -146,6 +148,14 @@ function Root() {
             element={
               <RoleGuard allowedRoles={["admin", "compliance"]}>
                 <AuditPage />
+              </RoleGuard>
+            }
+          />
+          <Route
+            path="admin/ml-model"
+            element={
+              <RoleGuard allowedRoles={["admin", "compliance"]}>
+                <MlModelPage />
               </RoleGuard>
             }
           />

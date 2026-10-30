@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Fingerprint, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Alert, Badge, Button, Card, Empty, ErrorText, PageHeader, Spinner } from "../components/ui";
+import { Badge, Button, Card, Empty, ErrorText, PageHeader, Spinner } from "../components/ui";
 import { RoleChip } from "../components/Layout";
 import { api, fmtTime } from "../lib/api";
 import { useConnections } from "../lib/connections";
@@ -18,7 +18,7 @@ function RunView({ run }: { run: any }) {
         {run.match ? <CheckCircle2 className="h-8 w-8 text-emerald-400" /> : <XCircle className="h-8 w-8 text-rose-400" />}
         <div>
           <div className="font-semibold">{run.match ? "Source records unchanged" : "Fingerprint mismatch — source data changed during the run"}</div>
-          <div className="text-xs text-fog-400">{run.connection_name} · {run.tables.length} tables · {run.rows_covered} rows · {run.queries_executed.length} protected queries · {fmtTime(run.created_at)}</div>
+          <div className="text-xs text-fog-400">{run.tables.length} tables · {run.rows_covered.toLocaleString()} rows verified · {fmtTime(run.created_at)}</div>
         </div>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
@@ -69,9 +69,9 @@ export default function IntegrityPage() {
     <div>
       <PageHeader
         title="Integrity Verification"
-        description="Proves masking changes query results, not stored records: canonical SHA-256 fingerprint → run SELECT * as every role through the masking pipeline → fingerprint again → compare."
+
       />
-      <Card title="Run verification" subtitle={selected?.name}>
+      <Card title="Run verification">
         <div className="flex flex-wrap items-center gap-2">
           {schema.data?.tables.map((t: string) => (
             <label key={t} className={`flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${tables.includes(t) ? "border-accent bg-accent/10" : "border-ink-600 text-fog-300"}`}>
@@ -83,9 +83,6 @@ export default function IntegrityPage() {
           <Button className="ml-auto" variant="primary" icon={<Fingerprint className="h-4 w-4" />} loading={verify.isPending} onClick={() => verify.mutate()} disabled={!selected}>Verify now</Button>
         </div>
         <ErrorText error={verify.error} />
-        <div className="mt-3">
-          <Alert tone="info">Scope: the selected tables at the time of the run. A matching fingerprint shows these records were not modified by the protected queries; it does not prove every record in every database is immutable.</Alert>
-        </div>
       </Card>
       <div className="mt-4">
         {runs.isLoading ? <Spinner /> : latest ? <Card title="Latest result"><RunView run={latest} /></Card> : <Empty icon={<Fingerprint className="h-8 w-8" />} title="No verification has run yet">Results appear only after a comparison actually executes.</Empty>}
@@ -94,7 +91,7 @@ export default function IntegrityPage() {
         <Card className="mt-4" title="History">
           <table className="w-full"><thead><tr><th className="th">When</th><th className="th">Database</th><th className="th">Tables</th><th className="th">Rows</th><th className="th">Fingerprint</th><th className="th">Outcome</th></tr></thead>
             <tbody>{runs.data.map((r) => (
-              <tr key={r.id}><td className="td text-xs text-fog-400">{fmtTime(r.created_at)}</td><td className="td">{r.connection_name}</td><td className="td text-xs">{r.tables.join(", ")}</td><td className="td tabular-nums">{r.rows_covered}</td><td className="td"><Hash h={r.after_fingerprint.slice(0, 24) + "…"} /></td><td className="td">{r.match ? <Badge tone="green">unchanged</Badge> : <Badge tone="red">mismatch</Badge>}</td></tr>
+              <tr key={r.id}><td className="td text-xs text-fog-400">{fmtTime(r.created_at)}</td><td className="td">{r.connection_name}</td><td className="td text-xs">{r.tables.join(", ")}</td><td className="td tabular-nums">{r.rows_covered.toLocaleString()}</td><td className="td"><Hash h={r.after_fingerprint.slice(0, 24) + "…"} /></td><td className="td">{r.match ? <Badge tone="green">unchanged</Badge> : <Badge tone="red">mismatch</Badge>}</td></tr>
             ))}</tbody>
           </table>
         </Card>

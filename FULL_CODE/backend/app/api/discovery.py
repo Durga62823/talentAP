@@ -13,7 +13,9 @@ from sqlalchemy.orm import Session
 from .. import audit
 from ..discovery import classification_dict
 from ..masking import ACTIONS
-from ..metadb import Classification, DbConnection, ScanRun, get_db, utcnow
+from .. import ai_classifier
+from ..metadb import AiClassification, Classification, DbConnection, MlClassification, ScanRun, get_db, utcnow
+from ..ml import model as ml_model
 from ..scanner import CATEGORIES, LABELS, SENSITIVITY
 from ..security import Principal, require
 from .common import corr, csv_safe, iso
@@ -66,7 +68,29 @@ def list_classifications(
         q = q.where(Classification.sensitivity == sensitivity)
     if review_status:
         q = q.where(Classification.review_status == review_status)
-    return [classification_dict(c) for c in db.scalars(q)]
+    rows = list(db.scalars(q))
+    ids = [c.id for c in rows]
+    ai_rows = {a.classification_id: a for a in db.scalars(
+        select(AiClassification).where(AiClassification.classification_id.in_(ids)))} if rows else {}
+    ml_rows = {m.classification_id: m for m in db.scalars(
+        select(MlClassification).where(MlClassification.classification_id.in_(ids)))} if rows else {}
+    return [classification_dict(c, ai_rows.get(c.id), ml_rows.get(c.id)) for c in rows]
+
+
+@router.get("/ml/model-card")
+def ml_model_card(p: Principal = Depends(require("scan:run"))):
+    """The local classifier's version, training data summary and evaluation metrics."""
+    model = ml_model.get_model()
+    return {"available": model is not None, "error": ml_model.model_error(), "min_confidence": ml_model.min_confidence(),
+            "card": ml_model.model_card()}
+
+
+@router.get("/ai/status")
+def ai_status(p: Principal = Depends(require("scan:run"))):
+    """Whether Gemini is configured (never the key itself) and the active model/prompt versions."""
+    cfg = ai_classifier.ai_settings()
+    return {"configured": ai_classifier.ai_configured(), "model": cfg.model, "prompt_version": ai_classifier.PROMPT_VERSION,
+            "min_confidence": cfg.min_confidence, "policy": "upgrade-only: AI can raise a column's sensitivity, never lower it"}
 
 
 class ReviewIn(BaseModel):
@@ -107,7 +131,8 @@ def review_classification(cid: int, body: ReviewIn, request: Request, p: Princip
         tables=[c.table_name], columns=[f"{c.table_name}.{c.column_name}"], correlation_id=corr(request),
         details={"before": before, "after": {"category": c.category, "sensitivity": c.sensitivity, "review_status": c.review_status}},
     )
-    return classification_dict(c)
+    return classification_dict(c, db.scalar(select(AiClassification).where(AiClassification.classification_id == c.id)),
+                               db.scalar(select(MlClassification).where(MlClassification.classification_id == c.id)))
 
 
 @router.get("/classifications/export.csv")

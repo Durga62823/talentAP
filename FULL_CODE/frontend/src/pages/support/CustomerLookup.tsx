@@ -19,7 +19,7 @@ export default function CustomerLookup() {
     e.preventDefault();
     const clean = inputVal.trim();
     if (!clean) {
-      setValidationError("Please enter a Customer ID (e.g. CIF-00UKL72D), Name, or Phone number.");
+      setValidationError("Please enter a full or partial Customer ID (e.g. CIF-00UKL72D or UKL72).");
       return;
     }
     setValidationError(null);
@@ -32,13 +32,14 @@ export default function CustomerLookup() {
     queryFn: async () => {
       if (!selected?.id || !searchTerm) return null;
 
-      // Clean search term to prevent raw SQL syntax errors while using SQLGlot parser
-      const term = searchTerm.replace(/['"\\]/g, "");
+      // Customer IDs are alphanumeric with dashes; anything else would only break the SQL.
+      const term = searchTerm.toUpperCase().replace(/[^A-Z0-9-]/g, "");
 
-      // Safe query that leverages backend sqlglot guard and server-side partial masking
-      const sql = term.toUpperCase().startsWith("CIF-")
-        ? `SELECT customer_id, cust_nm, mob_no, emailid, city, state, segment, dob_dt FROM customers WHERE customer_id = '${term.toUpperCase()}' LIMIT 10`
-        : `SELECT customer_id, cust_nm, mob_no, emailid, city, state, segment, dob_dt FROM customers WHERE cust_nm LIKE '%${term}%' OR mob_no LIKE '%${term}%' LIMIT 15`;
+      // Only customer_id may be filtered on: the server rejects WHERE on masked columns (name,
+      // phone) because filtering would reveal them by inference.
+      const sql = /^CIF-[A-Z0-9]{8}$/.test(term)
+        ? `SELECT customer_id, cust_nm, mob_no, emailid, city, state, segment, dob_dt FROM customers WHERE customer_id = '${term}' LIMIT 10`
+        : `SELECT customer_id, cust_nm, mob_no, emailid, city, state, segment, dob_dt FROM customers WHERE customer_id LIKE '%${term}%' LIMIT 15`;
 
       const res = await apiAllowDenied("/api/query/execute", {
         body: { connection_id: selected.id, sql },
@@ -66,14 +67,14 @@ export default function CustomerLookup() {
       </div>
 
       {/* Search Input Card */}
-      <Card title="Search Customers" subtitle="Search by Customer Identifier (CIF-...), Name, or Mobile Number">
+      <Card title="Search Customers" subtitle="Search by full or partial Customer ID. Names and phones are masked, so they cannot be searched.">
         <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-fog-500" />
             <input
               type="text"
               className="input pl-9 text-sm"
-              placeholder="e.g. CIF-00UKL72D, Ananya, or 98..."
+              placeholder="e.g. CIF-00UKL72D or UKL72"
               value={inputVal}
               onChange={(e) => {
                 setInputVal(e.target.value);
@@ -232,7 +233,7 @@ export default function CustomerLookup() {
             <Search className="mx-auto h-8 w-8 text-fog-500" />
             <h3 className="mt-2 text-sm font-medium text-fog-200">Enter a customer query</h3>
             <p className="mt-1 text-xs text-fog-400 max-w-sm mx-auto">
-              Type a Customer ID like <code>CIF-00UKL72D</code>, a customer name, or mobile number to look up customer records safely.
+              Type a Customer ID like <code>CIF-00UKL72D</code>, or part of one, to look up customer records safely.
             </p>
           </div>
         </Card>

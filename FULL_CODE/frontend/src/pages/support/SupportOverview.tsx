@@ -18,20 +18,17 @@ export default function SupportOverview() {
     queryKey: ["support-overview-stats", selected?.id],
     queryFn: async () => {
       if (!selected?.id) return null;
-      const res = await apiAllowDenied("/api/query/execute", {
-        body: {
-          connection_id: selected.id,
-          sql: "SELECT (SELECT COUNT(*) FROM customers) AS cust_count, (SELECT COUNT(*) FROM support_tickets) AS ticket_count, (SELECT COUNT(*) FROM support_tickets WHERE status = 'OPEN') AS open_tickets",
-        },
-      });
-      if (res.ok && res.body?.rows?.[0]) {
-        return {
-          customers: Number(res.body.rows[0][0]) || 0,
-          tickets: Number(res.body.rows[0][1]) || 0,
-          openTickets: Number(res.body.rows[0][2]) || 0,
-        };
-      }
-      return { customers: 5000, tickets: 3000, openTickets: 420 };
+      // Sub-queries are rejected by the SQL guard, so each count is its own query (run in parallel).
+      const count = async (sql: string) => {
+        const res = await apiAllowDenied("/api/query/execute", { body: { connection_id: selected.id, sql } });
+        return res.ok && res.body?.rows?.[0] ? Number(res.body.rows[0][0]) || 0 : null;
+      };
+      const [customers, tickets, openTickets] = await Promise.all([
+        count("SELECT COUNT(*) AS n FROM customers"),
+        count("SELECT COUNT(*) AS n FROM support_tickets"),
+        count("SELECT COUNT(*) AS n FROM support_tickets WHERE status = 'OPEN'"),
+      ]);
+      return { customers, tickets, openTickets };
     },
     enabled: !!selected?.id,
   });
@@ -44,7 +41,7 @@ export default function SupportOverview() {
       const res = await apiAllowDenied("/api/query/execute", {
         body: {
           connection_id: selected.id,
-          sql: "SELECT ticket_id, customer_id, channel, category, priority, status, substr(ticket_text, 1, 80) AS preview FROM support_tickets ORDER BY ticket_id DESC LIMIT 5",
+          sql: "SELECT ticket_id, customer_id, channel, category, priority, status, ticket_text FROM support_tickets ORDER BY ticket_id DESC LIMIT 5",
         },
       });
       if (res.ok && res.body?.rows) {
@@ -55,7 +52,7 @@ export default function SupportOverview() {
           category: r[3],
           priority: r[4],
           status: r[5],
-          preview: r[6],
+          preview: typeof r[6] === "string" ? r[6].slice(0, 80) : r[6],
         }));
       }
       return [];
@@ -113,14 +110,14 @@ export default function SupportOverview() {
       </div>
 
       {/* Quick Search Card */}
-      <Card title="Quick Customer Lookup" subtitle="Search across 5,000 customers by Customer ID, Name, Phone, or Account">
+      <Card title="Quick Customer Lookup" subtitle="Search customers by full or partial Customer ID">
         <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-fog-500" />
             <input
               type="text"
               className="input pl-9 text-sm"
-              placeholder="e.g. CIF-00UKL72D, CIF-007IS5OP, or customer name..."
+              placeholder="e.g. CIF-00UKL72D or UKL72"
               value={quickSearch}
               onChange={(e) => setQuickSearch(e.target.value)}
             />
@@ -149,21 +146,21 @@ export default function SupportOverview() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
           label="Total Customers"
-          value={statsQ.isLoading ? "…" : statsQ.data?.customers?.toLocaleString() ?? "5,000"}
+          value={statsQ.isLoading ? "…" : statsQ.data?.customers?.toLocaleString() ?? "—"}
           hint="Saffron Bank CIF database"
           icon={<Users className="h-4 w-4" />}
           tone="cyan"
         />
         <Stat
           label="Total Support Tickets"
-          value={statsQ.isLoading ? "…" : statsQ.data?.tickets?.toLocaleString() ?? "3,000"}
+          value={statsQ.isLoading ? "…" : statsQ.data?.tickets?.toLocaleString() ?? "—"}
           hint="Multi-channel customer inquiries"
           icon={<LifeBuoy className="h-4 w-4" />}
           tone="indigo"
         />
         <Stat
           label="Pending / Open Tickets"
-          value={statsQ.isLoading ? "…" : statsQ.data?.openTickets?.toLocaleString() ?? "420"}
+          value={statsQ.isLoading ? "…" : statsQ.data?.openTickets?.toLocaleString() ?? "—"}
           hint="Requires triage & resolution"
           icon={<Headphones className="h-4 w-4" />}
           tone="amber"
@@ -282,7 +279,7 @@ export default function SupportOverview() {
             </div>
             <div>
               <div className="text-sm font-semibold text-fog-100">Customer Lookup</div>
-              <div className="text-xs text-fog-400">Search customer records by ID, phone or name</div>
+              <div className="text-xs text-fog-400">Search customer records by Customer ID</div>
             </div>
           </div>
         </Link>

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FlaskConical, History, Plus, Power } from "lucide-react";
 import { useMemo, useState } from "react";
-import { ActionBadge, Alert, Badge, Button, Card, ErrorText, Modal, PageHeader, Spinner, Tabs, Value } from "../components/ui";
+import { ActionBadge, Badge, Button, Card, ErrorText, Modal, PageHeader, Spinner, Tabs, Value } from "../components/ui";
 import { RoleChip } from "../components/Layout";
 import { api, fmtTime } from "../lib/api";
 import { useConnections } from "../lib/connections";
@@ -154,7 +154,6 @@ export default function PoliciesPage() {
     <div>
       <PageHeader
         title="Masking Policy Studio"
-        description="Policies match on database, schema, table, column, category, sensitivity and role. The most specific match wins (column 16 › table 8 › category 4 › label 2 › schema/db 1), then priority, then lowest id. Sensitive columns with no match fail closed to REDACT."
         actions={<Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => setCreating(true)}>New policy</Button>}
       />
       <div className="grid gap-4 xl:grid-cols-[1fr_380px]">
@@ -186,13 +185,9 @@ export default function PoliciesPage() {
         </Card>
         <div className="space-y-4">
           <Card title="Preview a transformation" subtitle="Synthetic data only">{meta.data ? <Preview meta={meta.data} /> : <Spinner />}</Card>
-          <Card title="Keyed hashing (HMAC-SHA-256)">
-            <div className="space-y-2 text-xs leading-relaxed text-fog-400">
-              <p>The pseudonymisation key lives only on the server (env <code>SENTINEL_HMAC_KEY</code> or <code>data/secrets/hmac.key</code>) and is never sent to the browser or logged. Output is prefixed with the key id (<code>hm_k1_…</code>).</p>
-              <p>Rotating the key (new key + new <code>SENTINEL_HMAC_KEY_ID</code>) changes every pseudonym, so joins across rotation boundaries break by design.</p>
-              <Alert tone="warn">Pseudonymisation is not anonymisation: anyone holding the key can confirm guesses, and small domains can be enumerated.</Alert>
-            </div>
-          </Card>
+
+
+
         </div>
       </div>
       <Modal open={creating} onClose={() => setCreating(false)} title="New masking policy" wide>{meta.data && <PolicyForm meta={meta.data} onClose={() => setCreating(false)} />}</Modal>

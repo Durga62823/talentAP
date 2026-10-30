@@ -133,6 +133,52 @@ class Classification(Base):
     last_scanned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
 
+class AiClassification(Base):
+    """Latest Gemini verdict for a classification, computed from sanitized features only.
+    Kept beside the classification so the rule result and the AI result stay separately visible;
+    the AI only changes the effective classification when decide() returns APPLIED."""
+    __tablename__ = "ai_classifications"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    classification_id: Mapped[int] = mapped_column(Integer, ForeignKey("classifications.id", ondelete="CASCADE"), unique=True)
+    feature_hash: Mapped[str] = mapped_column(String(64), index=True)
+    features: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # sanitized statistics, no values
+    status: Mapped[str] = mapped_column(String(20))  # APPLIED|AGREES|KEPT_RULE|LOW_CONFIDENCE|HUMAN_REVIEWED|AI_UNAVAILABLE
+    detected_by: Mapped[str] = mapped_column(String(8), default="NONE")  # RULE|AI|BOTH|NONE
+    ai_category: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    ai_sensitivity: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    pii_type: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    identifier_kind: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    reason: Mapped[str] = mapped_column(String(400), default="")
+    needs_review: Mapped[bool] = mapped_column(Boolean, default=False)
+    rule_category: Mapped[str] = mapped_column(String(32), default="")
+    rule_sensitivity: Mapped[str] = mapped_column(String(32), default="")
+    error_code: Mapped[str] = mapped_column(String(32), default="")
+    model: Mapped[str] = mapped_column(String(64), default="")
+    prompt_version: Mapped[str] = mapped_column(String(32), default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
+class MlClassification(Base):
+    """Latest verdict of the locally trained classifier (app/ml) for a classification. Same
+    upgrade-only contract as AiClassification; the model never leaves the server."""
+    __tablename__ = "ml_classifications"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    classification_id: Mapped[int] = mapped_column(Integer, ForeignKey("classifications.id", ondelete="CASCADE"), unique=True)
+    status: Mapped[str] = mapped_column(String(20))  # APPLIED|AGREES|KEPT_RULE|LOW_CONFIDENCE|HUMAN_REVIEWED|ML_UNAVAILABLE
+    detected_by: Mapped[str] = mapped_column(String(8), default="NONE")  # RULE|ML|BOTH|NONE
+    category: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    sensitivity: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    top: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)       # top-3 classes
+    reasons: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)   # evidence for the prediction
+    rule_category: Mapped[str] = mapped_column(String(32), default="")
+    rule_sensitivity: Mapped[str] = mapped_column(String(32), default="")
+    error: Mapped[str] = mapped_column(String(160), default="")
+    model_version: Mapped[str] = mapped_column(String(32), default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class Policy(Base):
     __tablename__ = "policies"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -254,11 +300,19 @@ def get_engine():
             cur = dbapi_conn.cursor()
             cur.execute("PRAGMA foreign_keys=ON")
             cur.execute("PRAGMA journal_mode=WAL")
+            # WAL + NORMAL never corrupts the file; it only skips the fsync per commit, which
+            # dominated the per-query audit write.
+            cur.execute("PRAGMA synchronous=NORMAL")
+            cur.execute("PRAGMA temp_store=MEMORY")
             cur.close()
 
         Base.metadata.create_all(_engine)
         with _engine.begin() as conn:
             _install_audit_guards(conn)
+            # Audit filters/facets and the per-user activity stream; the table grows with every query.
+            # IF NOT EXISTS also upgrades metadata DBs created before these indexes existed.
+            for col in ("actor_name", "action", "role", "ts"):
+                conn.execute(text(f"CREATE INDEX IF NOT EXISTS ix_audit_events_{col} ON audit_events ({col})"))
         _SessionLocal = sessionmaker(bind=_engine, expire_on_commit=False)
     return _engine
 

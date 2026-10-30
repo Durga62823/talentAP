@@ -47,7 +47,7 @@ export default function LoginPage() {
           <div className="flex flex-col justify-center">
             <div className="mb-6 flex items-center gap-3.5">
               <img
-                src="/logo-emblem.png"
+                src="/logo-emblem-128.png"
                 alt="Dream Guard Shield"
                 className="h-14 w-14 shrink-0 object-contain drop-shadow-[0_4px_16px_rgba(249,115,22,0.35)]"
               />
@@ -67,20 +67,6 @@ export default function LoginPage() {
               </span>
             </h1>
 
-            <div className="mt-6 space-y-3 text-xs text-fog-300">
-              <div className="flex items-start gap-2.5 rounded-lg border border-ink-800 bg-ink-900/40 p-2.5">
-                <span className="font-semibold text-accent uppercase text-[11px] w-16 shrink-0">Admin:</span>
-                <span>Full security governance, PII discovery, policy lifecycle, and tamper-evident audit ledger.</span>
-              </div>
-              <div className="flex items-start gap-2.5 rounded-lg border border-ink-800 bg-ink-900/40 p-2.5">
-                <span className="font-semibold text-amber-300 uppercase text-[11px] w-16 shrink-0">Support:</span>
-                <span>Customer 360 lookup & support tickets with automated partial masking (<code>4111-XXXX-XXXX-1111</code>).</span>
-              </div>
-              <div className="flex items-start gap-2.5 rounded-lg border border-ink-800 bg-ink-900/40 p-2.5">
-                <span className="font-semibold text-cyan uppercase text-[11px] w-16 shrink-0">Analyst:</span>
-                <span>Transaction trends and aggregate explorer with strict k-anonymity guarantees ($k \ge 5$).</span>
-              </div>
-            </div>
 
             <p className="mt-4 text-[11px] text-fog-500">
               Backed by official Saffron Bank Ltd synthetic dataset (9 tables, 129,260 rows) across SQLite, MySQL, and PostgreSQL.
@@ -133,7 +119,7 @@ export default function LoginPage() {
                 <span className="flex items-center gap-1.5 text-xs font-semibold text-fog-300">
                   <KeyRound className="h-3.5 w-3.5 text-amber-400" /> Click to Test Demo Account
                 </span>
-                <span className="text-[10px] text-fog-500 font-mono">9 Demo Users</span>
+
               </div>
 
               {/* Role Filter Tabs */}
@@ -148,11 +134,10 @@ export default function LoginPage() {
                     type="button"
                     key={t.id}
                     onClick={() => setActiveRoleTab(t.id)}
-                    className={`flex-1 rounded-md py-1 text-[11px] font-medium transition-colors ${
-                      activeRoleTab === t.id
-                        ? "bg-ink-700 text-fog-100 shadow-sm"
-                        : "text-fog-400 hover:text-fog-200"
-                    }`}
+                    className={`flex-1 rounded-md py-1 text-[11px] font-medium transition-colors ${activeRoleTab === t.id
+                      ? "bg-ink-700 text-fog-100 shadow-sm"
+                      : "text-fog-400 hover:text-fog-200"
+                      }`}
                   >
                     {t.label}
                   </button>
@@ -178,16 +163,14 @@ export default function LoginPage() {
                         <span className="text-[13px] font-semibold text-fog-100">{a.label}</span>
                         <span className="font-mono text-[10px] text-fog-500">@{a.username}</span>
                       </div>
-                      <div className="truncate text-[11px] text-fog-400">{a.blurb}</div>
+                      <div className="truncate text-[11px] text-fog-400">{a.email}</div>
                     </div>
                     <RoleChip role={a.role} />
                   </button>
                 ))}
               </div>
 
-              <div className="mt-3 text-[11px] text-fog-500">
-                Default demo passwords: <code>Admin@2026!</code>, <code>Support@2026!</code>, <code>Analyst@2026!</code>
-              </div>
+
             </div>
           </div>
         </div>

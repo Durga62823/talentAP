@@ -21,10 +21,10 @@ function AddConnection({ open, onClose }: { open: boolean; onClose: () => void }
           kind === "sqlite"
             ? { name: f.name, kind, file: f.file }
             : {
-                name: f.name, kind, host: f.host, port: Number(f.port), database: f.database, username: f.username, password: f.password || undefined,
-                allowed_schemas: f.schemas.split(",").map((s) => s.trim()).filter(Boolean),
-                import_database: kind === "mysql" && f.importDb ? f.importDb : undefined,
-              },
+              name: f.name, kind, host: f.host, port: Number(f.port), database: f.database, username: f.username, password: f.password || undefined,
+              allowed_schemas: f.schemas.split(",").map((s) => s.trim()).filter(Boolean),
+              import_database: kind === "mysql" && f.importDb ? f.importDb : undefined,
+            },
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["connections"] });
@@ -214,7 +214,7 @@ export default function ConnectionsPage() {
     <div>
       <PageHeader
         title="Database Connections"
-        description="Registered targets are addressed by stable ids. Credentials stay on the server, encrypted at rest; the browser never sees connection strings."
+
         actions={
           <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => setAdding(true)}>
             Add connection

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import os
+import traceback
 
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
@@ -203,6 +204,9 @@ def reset_all(with_external: bool = True) -> dict:
     """Rebuild application state on the official dataset. Only SentinelMask's own metadata
     and its private copy of the official SQLite DB are replaced."""
     s = get_settings()
+    # A reset wipes users, sessions, policies and the audit log: always leave a trace of who asked.
+    caller = traceback.extract_stack()[-2]
+    log.warning("demo reset: rebuilding all application state in %s (called from %s:%s)", s.data_dir, caller.filename, caller.lineno)
     clear_adapters()
     eng = get_engine()
     with eng.begin() as c:

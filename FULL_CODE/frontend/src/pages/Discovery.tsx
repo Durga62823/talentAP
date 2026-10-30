@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Download, PencilLine, Radar, X } from "lucide-react";
+import { BrainCircuit, Check, Download, PencilLine, Radar, Sparkles, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ActionBadge, Alert, Badge, Button, Card, Empty, ErrorText, Modal, PageHeader, SensBadge, Spinner, Tabs } from "../components/ui";
 import { api, download, fmtTime } from "../lib/api";
@@ -9,7 +9,43 @@ type Cls = {
   id: number; schema: string; table: string; column: string; data_type: string; category: string; sensitivity: string;
   detected_category: string; detected_sensitivity: string; confidence: number; detection_method: string; evidence: string;
   sample_count: number; suggested_masking: string; review_status: string; reviewed_by: string | null; source: string; last_scanned_at: string;
+  ai: AiInfo | null;
+  ml: MlInfo | null;
 };
+
+type MlInfo = {
+  status: "APPLIED" | "AGREES" | "KEPT_RULE" | "LOW_CONFIDENCE" | "HUMAN_REVIEWED" | "ML_UNAVAILABLE";
+  detected_by: "RULE" | "ML" | "BOTH" | "NONE"; category: string | null; sensitivity: string | null; confidence: number | null;
+  top: { category: string; probability: number }[]; reasons: { feature: string; evidence: string; impact: number }[];
+  rule_category: string; rule_sensitivity: string; error: string; model_version: string; updated_at: string | null;
+};
+
+const ML_STATUS: Record<MlInfo["status"], { tone: string; label: string; hint: string }> = {
+  APPLIED: { tone: "indigo", label: "ML upgraded", hint: "The ML model found this column more sensitive than the rules, with high calibrated confidence; its classification is now active." },
+  AGREES: { tone: "green", label: "Agrees", hint: "ML model and rules agree." },
+  KEPT_RULE: { tone: "neutral", label: "Rule kept", hint: "The ML model suggested the same or lower sensitivity; models never lower protection." },
+  LOW_CONFIDENCE: { tone: "amber", label: "Review required", hint: "The ML model suggests more protection but below the confidence threshold, so it was not applied. Use Override to apply it manually." },
+  HUMAN_REVIEWED: { tone: "neutral", label: "Human decision", hint: "A reviewer decided this column; models do not change human decisions." },
+  ML_UNAVAILABLE: { tone: "red", label: "ML unavailable", hint: "No ML result; the rule-based classification is in force." },
+};
+
+type AiInfo = {
+  status: "APPLIED" | "AGREES" | "KEPT_RULE" | "LOW_CONFIDENCE" | "HUMAN_REVIEWED" | "AI_UNAVAILABLE";
+  detected_by: "RULE" | "AI" | "BOTH" | "NONE"; category: string | null; sensitivity: string | null; pii_type: string | null;
+  identifier_kind: string | null; confidence: number | null; reason: string; needs_review: boolean; rule_category: string;
+  rule_sensitivity: string; error_code: string; model: string; prompt_version: string; features: Record<string, any>; updated_at: string | null;
+};
+
+// What each AI outcome means for masking (upgrade-only: the AI can raise protection, never lower it).
+const AI_STATUS: Record<AiInfo["status"], { tone: string; label: string; hint: string }> = {
+  APPLIED: { tone: "indigo", label: "AI upgraded", hint: "AI found this column more sensitive than the rules; its classification is now active." },
+  AGREES: { tone: "green", label: "Agrees", hint: "AI and rules agree." },
+  KEPT_RULE: { tone: "neutral", label: "Rule kept", hint: "AI suggested the same or lower sensitivity; protection is never lowered by AI." },
+  LOW_CONFIDENCE: { tone: "amber", label: "Review required", hint: "AI suggests more protection but is unsure, so it was not applied. Use Override to apply it manually." },
+  HUMAN_REVIEWED: { tone: "neutral", label: "Human decision", hint: "A reviewer decided this column; AI does not change human decisions." },
+  AI_UNAVAILABLE: { tone: "red", label: "AI unavailable", hint: "No AI result; the rule-based classification is in force." },
+};
+const DETECTED: Record<string, string> = { BOTH: "Both detected", AI: "AI detected", RULE: "Rule detected", NONE: "" };
 
 const REVIEW_TONE: Record<string, string> = { pending: "amber", approved: "green", rejected: "neutral", overridden: "indigo" };
 
@@ -28,9 +64,13 @@ function Confidence({ v }: { v: number }) {
 export default function DiscoveryPage() {
   const qc = useQueryClient();
   const { selected } = useConnections();
-  const [filter, setFilter] = useState<"sensitive" | "pending" | "all">("sensitive");
+  const [filter, setFilter] = useState<"sensitive" | "pending" | "ai" | "all">("sensitive");
   const [table, setTable] = useState("");
   const [editing, setEditing] = useState<Cls | null>(null);
+  const [evidence, setEvidence] = useState<Cls | null>(null);
+  const [useAi, setUseAi] = useState(true);
+  const [useMl, setUseMl] = useState(true);
+  const [mlEvidence, setMlEvidence] = useState<Cls | null>(null);
   const meta = useQuery({ queryKey: ["cls-meta"], queryFn: () => api("/api/classifications/meta"), staleTime: Infinity });
   const q = useQuery({
     queryKey: ["classifications", selected?.id],
@@ -44,7 +84,7 @@ export default function DiscoveryPage() {
     qc.invalidateQueries({ queryKey: ["overview"] });
   };
   const scan = useMutation({
-    mutationFn: () => api(`/api/databases/${selected!.id}/scan`, { body: { sample_size: 100 } }),
+    mutationFn: () => api(`/api/databases/${selected!.id}/scan`, { body: { sample_size: 100, ai: useAi, ml: useMl } }),
     onSuccess: () => {
       invalidate();
       qc.invalidateQueries({ queryKey: ["scans"] });
@@ -63,6 +103,7 @@ export default function DiscoveryPage() {
     let r = q.data ?? [];
     if (filter === "sensitive") r = r.filter((c) => ["PII_HIGH", "PII_MEDIUM", "FINANCIAL_CONFIDENTIAL"].includes(c.sensitivity) || c.category !== "NONE");
     if (filter === "pending") r = r.filter((c) => c.review_status === "pending" && c.category !== "NONE");
+    if (filter === "ai") r = r.filter((c) => (c.ml && (c.ml.status === "APPLIED" || c.ml.status === "LOW_CONFIDENCE" || c.ml.detected_by === "ML")) || c.ai && (c.ai.status === "APPLIED" || c.ai.status === "LOW_CONFIDENCE" || c.ai.detected_by === "AI" || (!!c.ai.category && c.ai.category !== c.ai.rule_category)));
     if (table) r = r.filter((c) => c.table === table);
     return r;
   }, [q.data, filter, table]);
@@ -72,23 +113,28 @@ export default function DiscoveryPage() {
     <div>
       <PageHeader
         title="PII Discovery"
-        description="Column-name heuristics, data types, validated value patterns (Luhn, Verhoeff, IBAN mod-97, SSN rules) and pattern frequency over bounded samples. Raw samples are never stored or displayed."
+
         actions={
           <>
             <Button icon={<Download className="h-4 w-4" />} onClick={() => download("/api/classifications/export.csv")}>
               Export CSV
             </Button>
+            <label className="flex items-center gap-1.5 text-xs text-fog-300" title="Classify with the locally trained ML model (runs on this server)">
+              <input type="checkbox" checked={useMl} onChange={(e) => setUseMl(e.target.checked)} />
+              <BrainCircuit className="h-3.5 w-3.5 text-[#A8ADFF]" /> ML model
+            </label>
+            <label className="flex items-center gap-1.5 text-xs text-fog-300" title="Send sanitized column statistics (never values) to Gemini">
+              <input type="checkbox" checked={useAi} onChange={(e) => setUseAi(e.target.checked)} />
+              <Sparkles className="h-3.5 w-3.5 text-[#A8ADFF]" /> Gemini AI
+            </label>
             <Button variant="primary" icon={<Radar className="h-4 w-4" />} onClick={() => scan.mutate()} loading={scan.isPending} disabled={!selected}>
-              Scan {selected?.name ?? ""}
+              {scan.isPending && useAi ? "Scanning with AI…" : `Scan ${selected?.name ?? ""}`}
             </Button>
           </>
         }
       />
-      <div className="mb-4">
-        <Alert tone="info" title="Automated classification is heuristic">
-          It cannot guarantee every sensitive field is found. Review results below; approvals and overrides persist and survive rescans. Tables never scanned are not queryable (fail closed).
-        </Alert>
-      </div>
+
+
       {scan.data && (
         <div className="mb-4">
           <Alert tone={(scan.data as any).status === "completed" ? "success" : "error"}>
@@ -109,7 +155,7 @@ export default function DiscoveryPage() {
                 <option key={t}>{t}</option>
               ))}
             </select>
-            <Tabs value={filter} onChange={setFilter} items={[{ value: "sensitive", label: "Detected" }, { value: "pending", label: "Pending review" }, { value: "all", label: "All columns" }]} />
+            <Tabs value={filter} onChange={setFilter} items={[{ value: "sensitive", label: "Detected" }, { value: "pending", label: "Pending review" }, { value: "ai", label: "ML / AI findings" }, { value: "all", label: "All columns" }]} />
           </>
         }
       >
@@ -121,14 +167,16 @@ export default function DiscoveryPage() {
           </Empty>
         ) : (
           <div className="-mx-5 -mb-5 max-h-[640px] overflow-auto">
-            <table className="w-full min-w-[1100px]">
+            <table className="w-full min-w-[1480px]">
               <thead>
                 <tr>
                   <th className="th">Table.column</th>
                   <th className="th">Category</th>
                   <th className="th">Sensitivity</th>
                   <th className="th">Confidence</th>
-                  <th className="th">Method & evidence (no raw values)</th>
+                  <th className="th">Method & evidence</th>
+                  <th className="th">ML model</th>
+                  <th className="th">Gemini AI</th>
                   <th className="th">Suggested</th>
                   <th className="th">Review</th>
                   <th className="th text-right">Actions</th>
@@ -151,6 +199,8 @@ export default function DiscoveryPage() {
                       <div className="text-fog-300">{c.detection_method}</div>
                       <div>{c.evidence}</div>
                     </td>
+                    <td className="td min-w-[180px]"><MlCell c={c} onOpen={() => setMlEvidence(c)} /></td>
+                    <td className="td min-w-[190px]"><AiCell c={c} onOpen={() => setEvidence(c)} /></td>
                     <td className="td"><ActionBadge action={c.suggested_masking} /></td>
                     <td className="td">
                       <Badge tone={REVIEW_TONE[c.review_status]}>{c.review_status}</Badge>
@@ -210,6 +260,14 @@ export default function DiscoveryPage() {
         )}
       </Card>
 
+      <Modal open={!!mlEvidence} onClose={() => setMlEvidence(null)} title={`ML evidence · ${mlEvidence?.table}.${mlEvidence?.column}`}>
+        {mlEvidence?.ml && <MlEvidence c={mlEvidence} />}
+      </Modal>
+
+      <Modal open={!!evidence} onClose={() => setEvidence(null)} title={`AI evidence · ${evidence?.table}.${evidence?.column}`}>
+        {evidence?.ai && <AiEvidence c={evidence} />}
+      </Modal>
+
       <Modal open={!!editing} onClose={() => setEditing(null)} title={`Override ${editing?.table}.${editing?.column}`}>
         {editing && meta.data && <OverrideForm c={editing} meta={meta.data} busy={review.isPending} error={review.error} onSave={(body) => review.mutate({ id: editing.id, body })} />}
       </Modal>
@@ -239,6 +297,151 @@ function OverrideForm({ c, meta, onSave, busy, error }: { c: Cls; meta: any; onS
       <div className="flex justify-end">
         <Button variant="primary" loading={busy} onClick={() => onSave({ decision: "override", category, sensitivity })}>Save override</Button>
       </div>
+    </div>
+  );
+}
+
+function AiCell({ c, onOpen }: { c: Cls; onOpen: () => void }) {
+  const a = c.ai;
+  if (!a) return <span className="text-xs text-fog-500">not scanned with AI</span>;
+  const st = AI_STATUS[a.status];
+  return (
+    <button type="button" onClick={onOpen} className="w-full text-left" title={st.hint}>
+      <div className="flex flex-wrap items-center gap-1">
+        <Badge tone={st.tone}>{st.label}</Badge>
+        {DETECTED[a.detected_by] && <Badge tone="neutral">{DETECTED[a.detected_by]}</Badge>}
+      </div>
+      {a.category && (
+        <div className="mt-1 text-xs text-fog-300">
+          {a.category} <span className="text-fog-500">· {Math.round((a.confidence ?? 0) * 100)}% est.</span>
+        </div>
+      )}
+      <div className="text-[11px] text-[#A8ADFF] underline-offset-2 hover:underline">View evidence</div>
+    </button>
+  );
+}
+
+function AiEvidence({ c }: { c: Cls }) {
+  const a = c.ai!;
+  const st = AI_STATUS[a.status];
+  const feats = Object.entries(a.features ?? {}).filter(([k]) => k !== "rule_engine");
+  return (
+    <div className="space-y-3 text-sm">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-lg border border-ink-700 p-3">
+          <div className="text-xs text-fog-400">Rule-based engine</div>
+          <div className="mt-1 font-medium">{a.rule_category || c.detected_category}</div>
+          <SensBadge label={a.rule_sensitivity || c.detected_sensitivity} />
+        </div>
+        <div className="rounded-lg border border-ink-700 p-3">
+          <div className="text-xs text-fog-400">Gemini AI</div>
+          {a.category ? (
+            <>
+              <div className="mt-1 font-medium">{a.category} {a.pii_type && a.pii_type !== "NONE" && <span className="text-xs text-fog-400">({a.pii_type})</span>}</div>
+              <SensBadge label={a.sensitivity ?? ""} />
+            </>
+          ) : (
+            <div className="mt-1 text-rose-300">No result ({a.error_code ? a.error_code.replace(/_/g, " ") : "unavailable"})</div>
+          )}
+        </div>
+      </div>
+      <Alert tone={a.status === "APPLIED" ? "success" : a.status === "AI_UNAVAILABLE" ? "error" : "info"} title={st.label}>{st.hint}</Alert>
+      {a.category && (
+        <div className="space-y-1">
+          <div><span className="text-fog-400">Reason:</span> {a.reason}</div>
+          <div>
+            <span className="text-fog-400">Confidence:</span> {Math.round((a.confidence ?? 0) * 100)}%{" "}
+            <span className="text-xs text-fog-500">(the model's own estimate, not a statistically calibrated probability)</span>
+          </div>
+          <div><span className="text-fog-400">Identifier kind:</span> {a.identifier_kind}{a.needs_review && <Badge tone="amber" className="ml-2">model asked for review</Badge>}</div>
+        </div>
+      )}
+      <div>
+        <div className="mb-1 text-xs font-medium text-fog-300">{a.category ? "Sanitized features sent to the model" : "Sanitized features prepared for the model (not sent)"} · no data values</div>
+        <div className="max-h-56 overflow-auto rounded-lg border border-ink-700 bg-ink-900/60 p-2 font-mono text-[11px] text-fog-300">
+          {feats.length ? feats.map(([k, v]) => (
+            <div key={k} className="flex justify-between gap-4"><span className="text-fog-500">{k}</span><span>{String(v)}</span></div>
+          )) : <span className="text-fog-500">No features (column could not be summarised safely).</span>}
+        </div>
+      </div>
+      <div className="text-[11px] text-fog-500">Model {a.model} · prompt {a.prompt_version} · {a.updated_at ? fmtTime(a.updated_at) : ""}</div>
+    </div>
+  );
+}
+
+function MlCell({ c, onOpen }: { c: Cls; onOpen: () => void }) {
+  const m = c.ml;
+  if (!m) return <span className="text-xs text-fog-500">not scanned with ML</span>;
+  const st = ML_STATUS[m.status];
+  return (
+    <button type="button" onClick={onOpen} className="w-full text-left" title={st.hint}>
+      <div className="flex flex-wrap items-center gap-1">
+        <Badge tone={st.tone}>{st.label}</Badge>
+        {m.detected_by === "ML" && <Badge tone="neutral">ML detected</Badge>}
+      </div>
+      {m.category && (
+        <div className="mt-1 text-xs text-fog-300">
+          {m.category} <span className="text-fog-500">· {Math.round((m.confidence ?? 0) * 100)}%</span>
+        </div>
+      )}
+      <div className="text-[11px] text-[#A8ADFF] underline-offset-2 hover:underline">Why?</div>
+    </button>
+  );
+}
+
+function MlEvidence({ c }: { c: Cls }) {
+  const m = c.ml!;
+  const st = ML_STATUS[m.status];
+  return (
+    <div className="space-y-3 text-sm">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-lg border border-ink-700 p-3">
+          <div className="text-xs text-fog-400">Rule-based engine</div>
+          <div className="mt-1 font-medium">{m.rule_category || c.detected_category}</div>
+          <SensBadge label={m.rule_sensitivity || c.detected_sensitivity} />
+        </div>
+        <div className="rounded-lg border border-ink-700 p-3">
+          <div className="text-xs text-fog-400">ML model {m.model_version && `(${m.model_version})`}</div>
+          {m.category ? (
+            <>
+              <div className="mt-1 font-medium">{m.category}</div>
+              <SensBadge label={m.sensitivity ?? ""} />
+            </>
+          ) : (
+            <div className="mt-1 text-rose-300">No result: {m.error || "unavailable"}</div>
+          )}
+        </div>
+      </div>
+      <Alert tone={m.status === "APPLIED" ? "success" : m.status === "ML_UNAVAILABLE" ? "error" : "info"} title={st.label}>{st.hint}</Alert>
+      {m.category && (
+        <>
+          <div>
+            <div className="mb-1 text-xs font-medium text-fog-300">Top predictions (calibrated probability)</div>
+            {m.top.map((t) => (
+              <div key={t.category} className="flex items-center gap-2 text-xs">
+                <span className="w-40 font-mono text-fog-300">{t.category}</span>
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink-700"><div className="h-full rounded-full bg-[#8b93ff]" style={{ width: `${t.probability * 100}%` }} /></div>
+                <span className="w-10 text-right tabular-nums text-fog-400">{Math.round(t.probability * 100)}%</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div className="mb-1 text-xs font-medium text-fog-300">Why: evidence that most supports "{m.category}"</div>
+            {m.reasons.length ? (
+              <ul className="space-y-1 text-xs">
+                {m.reasons.map((r) => (
+                  <li key={r.feature} className="flex justify-between gap-3">
+                    <span>{r.evidence}</span>
+                    <span className="tabular-nums text-emerald-300">+{Math.round(r.impact * 100)} pts</span>
+                  </li>
+                ))}
+              </ul>
+            ) : <div className="text-xs text-fog-500">No single feature dominates; the prediction comes from many weak signals.</div>}
+            <div className="mt-1 text-[11px] text-fog-500">Impact = how much the probability drops when that signal is reset to a typical value.</div>
+          </div>
+        </>
+      )}
+      <div className="text-[11px] text-fog-500">Runs on this server; no data is sent anywhere. {m.updated_at ? fmtTime(m.updated_at) : ""}</div>
     </div>
   );
 }
