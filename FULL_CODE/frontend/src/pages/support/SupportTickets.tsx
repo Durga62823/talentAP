@@ -59,15 +59,15 @@ export default function SupportTickets() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between border-b border-[#DCE5F0] pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="rounded-md border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold uppercase text-amber-300">
+            <span className="rounded-md border border-[#DCE5F0] bg-[#EAF2FB] px-2 py-0.5 text-xs font-semibold uppercase text-[#123B67]">
               Customer Operations
             </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-fog-100">Support Tickets Center</h1>
-          <p className="text-sm text-fog-400">
+          <h1 className="text-2xl font-bold tracking-tight text-[#172B45] mt-1">Support Tickets Center</h1>
+          <p className="text-sm text-[#64748B]">
             Triage and resolve customer tickets across Saffron Bank channels (3,000 cases).
           </p>
         </div>
@@ -88,10 +88,10 @@ export default function SupportTickets() {
           <div>
             <label className="label text-xs">Search Ticket or Customer</label>
             <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-fog-500" />
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#64748B]" />
               <input
                 type="text"
-                className="input h-8 pl-8 text-xs"
+                className="input h-9 pl-8 text-xs"
                 placeholder="TKT-... or CIF-..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -102,7 +102,7 @@ export default function SupportTickets() {
           <div>
             <label className="label text-xs">Category</label>
             <select
-              className="input h-8 py-0 text-xs"
+              className="input h-9 py-0 text-xs"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
@@ -117,7 +117,7 @@ export default function SupportTickets() {
           <div>
             <label className="label text-xs">Status</label>
             <select
-              className="input h-8 py-0 text-xs"
+              className="input h-9 py-0 text-xs"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
@@ -132,7 +132,7 @@ export default function SupportTickets() {
           <div>
             <label className="label text-xs">Priority</label>
             <select
-              className="input h-8 py-0 text-xs"
+              className="input h-9 py-0 text-xs"
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
             >
@@ -158,40 +158,40 @@ export default function SupportTickets() {
           subtitle="Showing latest cases matching your filters. Free-text PII is sanitized server-side."
         >
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-ink-700 text-fog-400">
+            <table className="w-full text-left text-xs min-w-[750px]">
+              <thead className="border-b border-[#DCE5F0] bg-[#F4F8FD] text-[#172B45]">
                 <tr>
-                  <th className="pb-2.5 font-medium">Ticket ID</th>
-                  <th className="pb-2.5 font-medium">Customer ID</th>
-                  <th className="pb-2.5 font-medium">Category</th>
-                  <th className="pb-2.5 font-medium">Channel</th>
-                  <th className="pb-2.5 font-medium">Priority</th>
-                  <th className="pb-2.5 font-medium">Status</th>
-                  <th className="pb-2.5 font-medium">Subject / Inquiry</th>
-                  <th className="pb-2.5 text-right font-medium">Actions</th>
+                  <th className="py-2.5 px-3 font-semibold">Ticket ID</th>
+                  <th className="py-2.5 px-3 font-semibold">Customer ID</th>
+                  <th className="py-2.5 px-3 font-semibold">Category</th>
+                  <th className="py-2.5 px-3 font-semibold">Channel</th>
+                  <th className="py-2.5 px-3 font-semibold">Priority</th>
+                  <th className="py-2.5 px-3 font-semibold">Status</th>
+                  <th className="py-2.5 px-3 font-semibold">Subject / Inquiry</th>
+                  <th className="py-2.5 px-3 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ink-800 text-fog-200">
+              <tbody className="divide-y divide-[#DCE5F0] text-[#172B45]">
                 {ticketsQ.data.body.rows.map((row: any[]) => {
                   const [tktId, cif, chan, cat, pri, st, created, text, notes, assigned] = row;
                   return (
-                    <tr key={tktId} className="transition-colors hover:bg-ink-800/40">
-                      <td className="py-2.5 font-mono font-medium text-amber-200">{tktId}</td>
-                      <td className="py-2.5 font-mono text-cyan">
-                        <Link to={`/support/profiles?id=${encodeURIComponent(cif)}`} className="hover:underline">
+                    <tr key={tktId} className="transition-colors hover:bg-[#F4F8FD]">
+                      <td className="py-2.5 px-3 font-mono font-semibold text-[#123B67]">{tktId}</td>
+                      <td className="py-2.5 px-3 font-mono font-medium">
+                        <Link to={`/support/profiles?id=${encodeURIComponent(cif)}`} className="text-[#1D5FA7] hover:underline">
                           {cif}
                         </Link>
                       </td>
-                      <td className="py-2.5 font-medium text-fog-100">{cat}</td>
-                      <td className="py-2.5 text-fog-400">{chan}</td>
-                      <td className="py-2.5">
+                      <td className="py-2.5 px-3 font-semibold text-[#172B45]">{cat}</td>
+                      <td className="py-2.5 px-3 text-[#64748B]">{chan}</td>
+                      <td className="py-2.5 px-3">
                         <Badge
                           tone={pri === "HIGH" ? "red" : pri === "MEDIUM" ? "amber" : "neutral"}
                         >
                           {pri}
                         </Badge>
                       </td>
-                      <td className="py-2.5">
+                      <td className="py-2.5 px-3">
                         <Badge
                           tone={
                             st === "OPEN"
@@ -204,10 +204,10 @@ export default function SupportTickets() {
                           {st}
                         </Badge>
                       </td>
-                      <td className="max-w-[260px] truncate py-2.5 text-fog-300" title={text}>
+                      <td className="max-w-[260px] truncate py-2.5 px-3 text-[#64748B]" title={text}>
                         {text}
                       </td>
-                      <td className="py-2.5 text-right">
+                      <td className="py-2.5 px-3 text-right">
                         <Button
                           size="sm"
                           variant="ghost"
@@ -238,7 +238,7 @@ export default function SupportTickets() {
         </Card>
       ) : (
         <Card>
-          <div className="py-8 text-center text-xs text-fog-400">
+          <div className="py-8 text-center text-xs text-[#64748B]">
             {ticketsQ.data?.body?.error?.message || "No tickets found matching the specified filters."}
           </div>
         </Card>
@@ -246,12 +246,12 @@ export default function SupportTickets() {
 
       {/* Ticket Details Modal */}
       {selectedTicket && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="card w-full max-w-lg animate-fadein p-6 shadow-2xl">
-            <div className="flex items-start justify-between border-b border-ink-700 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
+          <div className="card w-full max-w-lg animate-fadein bg-white border border-[#DCE5F0] rounded-xl p-6 shadow-modal">
+            <div className="flex items-start justify-between border-b border-[#DCE5F0] pb-3.5">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-base font-bold text-amber-200">
+                  <span className="font-mono text-base font-bold text-[#123B67]">
                     {selectedTicket.id}
                   </span>
                   <Badge tone={selectedTicket.status === "OPEN" ? "amber" : "green"}>
@@ -261,53 +261,53 @@ export default function SupportTickets() {
                     {selectedTicket.priority} Priority
                   </Badge>
                 </div>
-                <div className="mt-1 text-xs text-fog-400">
+                <div className="mt-1 text-xs text-[#64748B]">
                   Channel: {selectedTicket.channel} · Category: {selectedTicket.category}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedTicket(null)}
-                className="rounded-lg p-1 text-fog-400 hover:bg-ink-800 hover:text-fog-100"
+                className="rounded-lg p-1 text-[#64748B] hover:bg-[#EAF2FB] hover:text-[#123B67] transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <div className="mt-4 space-y-4 text-xs">
-              <div className="flex items-center justify-between rounded-lg border border-ink-700 bg-ink-900/50 p-3">
-                <span className="text-fog-400">Associated Customer</span>
+              <div className="flex items-center justify-between rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3">
+                <span className="text-[#64748B] font-medium">Associated Customer</span>
                 <Link
                   to={`/support/profiles?id=${encodeURIComponent(selectedTicket.cif)}`}
-                  className="font-mono font-medium text-cyan hover:underline"
+                  className="font-mono font-semibold text-[#1D5FA7] hover:underline"
                 >
                   {selectedTicket.cif} → Open Profile
                 </Link>
               </div>
 
               <div>
-                <label className="font-semibold text-fog-200">Customer Issue Description</label>
-                <div className="mt-1.5 rounded-lg border border-ink-700 bg-ink-900/60 p-3 leading-relaxed text-fog-100">
+                <label className="font-semibold text-[#172B45]">Customer Issue Description</label>
+                <div className="mt-1.5 rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3 leading-relaxed text-[#172B45]">
                   {selectedTicket.text}
                 </div>
               </div>
 
               {selectedTicket.notes && (
                 <div>
-                  <label className="font-semibold text-fog-200">Internal Agent Notes</label>
-                  <div className="mt-1.5 rounded-lg border border-ink-700 bg-ink-900/40 p-3 text-fog-300">
+                  <label className="font-semibold text-[#172B45]">Internal Agent Notes</label>
+                  <div className="mt-1.5 rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3 text-[#64748B]">
                     {selectedTicket.notes}
                   </div>
                 </div>
               )}
 
-              <div className="flex items-center gap-2 text-[11px] text-emerald-400">
-                <ShieldCheck className="h-4 w-4 shrink-0" />
+              <div className="flex items-center gap-2 text-[11px] text-emerald-700 font-medium">
+                <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
                 <span>Masking policy active: Sensitive customer account identifiers are redacted or masked.</span>
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end gap-2 border-t border-ink-700 pt-3">
+            <div className="mt-6 flex justify-end gap-2 border-t border-[#DCE5F0] pt-3">
               <Button variant="secondary" size="sm" onClick={() => setSelectedTicket(null)}>
                 Close
               </Button>

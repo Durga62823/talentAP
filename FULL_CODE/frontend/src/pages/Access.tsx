@@ -27,7 +27,7 @@ function Grants() {
   });
 
   if (!selected) {
-    return <p className="text-xs text-fog-400">Select a database connection to view and manage table grants.</p>;
+    return <p className="text-xs text-[#64748B]">Select a database connection to view and manage table grants.</p>;
   }
   if (q.isLoading || rolesQ.isLoading) return <Spinner />;
   if (q.error) return <ErrorText error={q.error} />;
@@ -39,8 +39,8 @@ function Grants() {
 
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div className="overflow-x-auto rounded-lg border border-[#DCE5F0]">
+        <table className="w-full text-xs min-w-[500px]">
           <thead>
             <tr>
               <th className="th">Table</th>
@@ -53,8 +53,8 @@ function Grants() {
           </thead>
           <tbody>
             {tables.map((t: string) => (
-              <tr key={t}>
-                <td className="td mono">{t}</td>
+              <tr key={t} className="hover:bg-[#F4F8FD]">
+                <td className="td mono font-semibold text-[#172B45]">{t}</td>
                 {roles.map((r) => {
                   const on = (draft[r] ?? []).includes(t);
                   return (
@@ -62,8 +62,11 @@ function Grants() {
                       <button
                         aria-label={`${on ? "Revoke" : "Grant"} ${t} for ${r}`}
                         onClick={() => toggle(r, t)}
-                        className={`inline-grid h-6 w-6 place-items-center rounded-md border ${on ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-300" : "border-ink-600 text-fog-500"
-                          }`}
+                        className={`inline-grid h-6 w-6 place-items-center rounded-md border transition-all ${
+                          on
+                            ? "border-emerald-300 bg-emerald-50 text-emerald-800 shadow-sm"
+                            : "border-[#DCE5F0] bg-white text-[#64748B] hover:border-[#3478C8]"
+                        }`}
                       >
                         {on ? <Check className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}
                       </button>
@@ -75,7 +78,7 @@ function Grants() {
           </tbody>
         </table>
       </div>
-      <div className="flex flex-wrap justify-end gap-2">
+      <div className="flex flex-wrap justify-end gap-2 pt-1">
         {roles.map((r) => (
           <Button key={r} size="sm" loading={save.isPending && save.variables === r} onClick={() => save.mutate(r)}>
             Save {r} grants
@@ -83,7 +86,7 @@ function Grants() {
         ))}
       </div>
       <ErrorText error={save.error} />
-      <p className="text-[11px] text-fog-500">
+      <p className="text-[11px] text-[#64748B]">
         Default deny: a role can only query tables granted here. Grants never bypass masking — they only decide whether a table is reachable at all.
       </p>
     </div>
@@ -116,7 +119,7 @@ export default function AccessPage() {
     <div>
       <PageHeader
         title="Role & Access Management"
-
+        description="Configure table-level permissions, role memberships, and least-privilege security boundaries."
         actions={
           <Button variant="primary" icon={<UserPlus className="h-4 w-4" />} onClick={() => setAdding(true)}>
             Add user
@@ -130,49 +133,51 @@ export default function AccessPage() {
           ) : users.error ? (
             <ErrorText error={users.error} />
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr>
-                  <th className="th">User</th>
-                  <th className="th">Role</th>
-                  <th className="th">Status</th>
-                  <th className="th">Created</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(users.data ?? []).map((u) => (
-                  <tr key={u.id}>
-                    <td className="td">
-                      <div className="text-[13px]">{u.display_name}</div>
-                      <div className="text-[11px] text-fog-500">@{u.username}</div>
-                    </td>
-                    <td className="td">
-                      <select
-                        className="input h-8 w-auto py-0 text-xs"
-                        value={u.role}
-                        disabled={u.id === me?.id}
-                        onChange={(e) => patch.mutate({ id: u.id, body: { role: e.target.value } })}
-                        aria-label={`Role for ${u.username}`}
-                      >
-                        {roles.data?.roles?.map((r: any) => (
-                          <option key={r.name}>{r.name}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="td">
-                      <button
-                        disabled={u.id === me?.id}
-                        onClick={() => patch.mutate({ id: u.id, body: { active: !u.active } })}
-                        className="disabled:cursor-not-allowed"
-                      >
-                        <Badge tone={u.active ? "green" : "neutral"}>{u.active ? "active" : "disabled"}</Badge>
-                      </button>
-                    </td>
-                    <td className="td text-xs text-fog-400">{fmtTime(u.created_at)}</td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs min-w-[450px]">
+                <thead>
+                  <tr>
+                    <th className="th">User</th>
+                    <th className="th">Role</th>
+                    <th className="th">Status</th>
+                    <th className="th">Created</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(users.data ?? []).map((u) => (
+                    <tr key={u.id} className="hover:bg-[#F4F8FD]">
+                      <td className="td">
+                        <div className="text-[13px] font-semibold text-[#172B45]">{u.display_name}</div>
+                        <div className="text-[11px] text-[#64748B]">@{u.username}</div>
+                      </td>
+                      <td className="td">
+                        <select
+                          className="input h-8 w-auto py-0 text-xs font-semibold"
+                          value={u.role}
+                          disabled={u.id === me?.id}
+                          onChange={(e) => patch.mutate({ id: u.id, body: { role: e.target.value } })}
+                          aria-label={`Role for ${u.username}`}
+                        >
+                          {roles.data?.roles?.map((r: any) => (
+                            <option key={r.name}>{r.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="td">
+                        <button
+                          disabled={u.id === me?.id}
+                          onClick={() => patch.mutate({ id: u.id, body: { active: !u.active } })}
+                          className="disabled:cursor-not-allowed"
+                        >
+                          <Badge tone={u.active ? "green" : "neutral"}>{u.active ? "active" : "disabled"}</Badge>
+                        </button>
+                      </td>
+                      <td className="td text-xs text-[#64748B]">{fmtTime(u.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
           <ErrorText error={patch.error} />
         </Card>
@@ -180,12 +185,12 @@ export default function AccessPage() {
           {roles.data ? (
             <div className="space-y-3">
               {roles.data.roles?.map((r: any) => (
-                <div key={r.name} className="rounded-lg border border-ink-700 p-3">
+                <div key={r.name} className="rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3.5">
                   <div className="flex items-center gap-2">
                     <RoleChip role={r.name} />
-                    <span className="text-xs text-fog-400">{r.description}</span>
+                    <span className="text-xs text-[#64748B]">{r.description}</span>
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-1">
+                  <div className="mt-2.5 flex flex-wrap gap-1">
                     {Object.keys(roles.data.permissions ?? {}).map((p) => (
                       <Badge
                         key={p}
@@ -213,7 +218,7 @@ export default function AccessPage() {
       </Card>
       <Modal open={adding} onClose={() => setAdding(false)} title="Add user">
         <form
-          className="space-y-3"
+          className="space-y-3.5"
           onSubmit={(e) => {
             e.preventDefault();
             create.mutate();
@@ -253,10 +258,13 @@ export default function AccessPage() {
               required
               autoComplete="new-password"
             />
-            <p className="mt-1 text-[11px] text-fog-500">≥ 10 chars with upper, lower case and a digit. Stored as Argon2id.</p>
+            <p className="mt-1 text-[11px] text-[#64748B]">≥ 10 chars with upper, lower case and a digit. Stored as Argon2id.</p>
           </div>
           <ErrorText error={create.error} />
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2 pt-2 border-t border-[#DCE5F0]">
+            <Button variant="ghost" onClick={() => setAdding(false)}>
+              Cancel
+            </Button>
             <Button variant="primary" type="submit" loading={create.isPending}>
               Create user
             </Button>

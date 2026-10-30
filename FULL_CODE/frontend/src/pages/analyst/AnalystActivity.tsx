@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { History, RefreshCw, Shield } from "lucide-react";
+import { History, RefreshCw } from "lucide-react";
 import { Button, Card, OutcomeBadge, Spinner } from "../../components/ui";
 import { api, fmtTime } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
@@ -17,16 +17,16 @@ export default function AnalystActivity() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#DCE5F0] pb-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-md border border-cyan/40 bg-cyan/10 px-2 py-0.5 text-xs font-semibold uppercase text-cyan">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-md border border-[#DCE5F0] bg-[#EAF2FB] px-2 py-0.5 text-xs font-semibold uppercase text-[#123B67]">
               Accountability & Audit
             </span>
-            <span className="text-xs text-fog-400">· Principal: {user?.username}</span>
+            <span className="text-xs text-[#64748B]">· Principal: @{user?.username}</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-fog-100">My Analytics Activity</h1>
-          <p className="text-sm text-fog-400">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#172B45] mt-1">My Analytics Activity</h1>
+          <p className="text-xs sm:text-sm text-[#64748B]">
             Audit history of your analytics requests, aggregate evaluations, and any rejected inference attempts.
           </p>
         </div>
@@ -36,19 +36,10 @@ export default function AnalystActivity() {
           size="sm"
           onClick={() => activityQ.refetch()}
           icon={<RefreshCw className="h-3.5 w-3.5" />}
+          className="self-start sm:self-auto"
         >
           Refresh Log
         </Button>
-      </div>
-
-      {/* Security Privacy Notice */}
-      <div className="rounded-xl border border-ink-700 bg-ink-900/60 p-4">
-        <div className="flex items-start gap-3">
-          <Shield className="h-5 w-5 shrink-0 text-cyan mt-0.5" />
-          <div className="text-xs leading-relaxed text-fog-300">
-            <strong className="text-fog-100">Isolated Audit Ledger:</strong> This view displays solely the operations executed by your authenticated session (<code>{user?.username}</code>). All queries and security enforcement decisions are cryptographically recorded in the SHA-256 tamper-evident audit log.
-          </div>
-        </div>
       </div>
 
       {/* Activity Table Card */}
@@ -62,58 +53,58 @@ export default function AnalystActivity() {
           </div>
         ) : activityQ.data?.events && activityQ.data.events.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-ink-700 text-fog-400">
+            <table className="w-full text-left text-xs min-w-[700px]">
+              <thead className="border-b border-[#DCE5F0] bg-[#F4F8FD] text-[#172B45]">
                 <tr>
-                  <th className="pb-2.5 font-medium">Timestamp</th>
-                  <th className="pb-2.5 font-medium">Action</th>
-                  <th className="pb-2.5 font-medium">Outcome</th>
-                  <th className="pb-2.5 font-medium">Tables Accessed</th>
-                  <th className="pb-2.5 font-medium">Execution Duration</th>
-                  <th className="pb-2.5 font-medium">Security Detail / Reason</th>
-                  <th className="pb-2.5 text-right font-medium">Audit Seq</th>
+                  <th className="py-2.5 px-3 font-semibold">Timestamp</th>
+                  <th className="py-2.5 px-3 font-semibold">Action</th>
+                  <th className="py-2.5 px-3 font-semibold">Outcome</th>
+                  <th className="py-2.5 px-3 font-semibold">Tables Accessed</th>
+                  <th className="py-2.5 px-3 font-semibold">Execution Duration</th>
+                  <th className="py-2.5 px-3 font-semibold">Security Detail / Reason</th>
+                  <th className="py-2.5 px-3 text-right font-semibold">Audit Seq</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ink-800 text-fog-200">
+              <tbody className="divide-y divide-[#DCE5F0] text-[#172B45]">
                 {activityQ.data.events.map((e) => (
-                  <tr key={e.id} className="transition-colors hover:bg-ink-800/40">
-                    <td className="whitespace-nowrap py-3 font-mono text-fog-300">
+                  <tr key={e.id} className="transition-colors hover:bg-[#F4F8FD]">
+                    <td className="whitespace-nowrap py-3 px-3 font-mono text-[#64748B]">
                       {fmtTime(e.ts)}
                     </td>
-                    <td className="py-3 font-medium text-fog-100">
+                    <td className="py-3 px-3 font-semibold text-[#172B45]">
                       <div className="flex items-center gap-1.5">
-                        <History className="h-3.5 w-3.5 text-cyan" />
+                        <History className="h-3.5 w-3.5 text-[#1D5FA7]" />
                         {e.action}
                       </div>
                     </td>
-                    <td className="py-3">
+                    <td className="py-3 px-3">
                       <OutcomeBadge outcome={e.outcome} />
                     </td>
-                    <td className="py-3">
+                    <td className="py-3 px-3">
                       {e.tables && e.tables.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {e.tables.map((t: string) => (
                             <span
                               key={t}
-                              className="rounded border border-ink-600 bg-ink-800 px-1.5 py-0.5 font-mono text-[10px] text-cyan"
+                              className="rounded border border-[#DCE5F0] bg-[#EAF2FB] px-1.5 py-0.5 font-mono text-[10px] text-[#123B67] font-medium"
                             >
                               {t}
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <span className="text-fog-500">—</span>
+                        <span className="text-[#64748B]">—</span>
                       )}
                     </td>
-                    <td className="py-3 font-mono text-fog-400">
+                    <td className="py-3 px-3 font-mono text-[#64748B]">
                       {e.duration_ms !== null && e.duration_ms !== undefined
                         ? `${Math.round(e.duration_ms)} ms`
                         : "—"}
                     </td>
-                    <td className="max-w-[280px] truncate py-3 text-fog-400" title={e.reason || "Authorized query"}>
+                    <td className="max-w-[280px] truncate py-3 px-3 text-[#64748B]" title={e.reason || "Authorized query"}>
                       {e.reason || "Authorized query"}
                     </td>
-                    <td className="py-3 text-right font-mono text-fog-500">
+                    <td className="py-3 px-3 text-right font-mono font-medium text-[#123B67]">
                       #{e.seq}
                     </td>
                   </tr>
@@ -122,7 +113,7 @@ export default function AnalystActivity() {
             </table>
           </div>
         ) : (
-          <div className="py-8 text-center text-xs text-fog-400">
+          <div className="py-8 text-center text-xs text-[#64748B]">
             No activity recorded for this analyst session yet. Run queries or explore charts to record events.
           </div>
         )}

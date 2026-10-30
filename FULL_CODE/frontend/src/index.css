@@ -3,52 +3,87 @@
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
+  --office-navy: #123B67;
+  --office-primary: #1D5FA7;
+  --office-secondary: #3478C8;
+  --office-light: #EAF2FB;
+  --office-pale: #F4F8FD;
+  --office-white: #FFFFFF;
+  --office-bg: #F5F8FC;
+  --office-text: #172B45;
+  --office-text-muted: #64748B;
+  --office-border: #DCE5F0;
+  --office-muted: #EEF3F9;
 }
 
 html,
 body,
 #root {
   height: 100%;
+  background-color: #F5F8FC;
+  color: #172B45;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  @apply bg-ink-950 text-fog-100 font-sans antialiased;
+  @apply bg-[#F5F8FC] text-[#172B45] font-sans antialiased;
   font-feature-settings: "cv11", "ss01";
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
 }
 
 ::selection {
-  background: #6366f155;
+  background: #EAF2FB;
+  color: #123B67;
 }
 
 *:focus-visible {
-  outline: 2px solid #7c83ff;
+  outline: 2px solid #1D5FA7;
   outline-offset: 2px;
   border-radius: 6px;
 }
 
-/* thin scrollbars */
+/* Crisp enterprise scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #26324f transparent;
+  scrollbar-color: #DCE5F0 #F5F8FC;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #F5F8FC;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #DCE5F0;
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #3478C8;
 }
 
 @layer components {
   .card {
-    @apply rounded-xl border border-ink-600/70 bg-ink-850/80 shadow-card;
+    @apply rounded-xl border border-[#DCE5F0] bg-white shadow-card;
   }
   .input {
-    @apply w-full rounded-lg border border-ink-600 bg-ink-900 px-3 py-2 text-sm text-fog-100 placeholder:text-fog-500
-      focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30 disabled:opacity-50;
+    @apply w-full rounded-lg border border-[#DCE5F0] bg-white px-3 py-2 text-sm text-[#172B45] placeholder:text-[#64748B]
+      focus:border-[#1D5FA7] focus:outline-none focus:ring-2 focus:ring-[#1D5FA7]/20 disabled:bg-[#EEF3F9] disabled:opacity-60 transition-colors;
   }
   .label {
-    @apply mb-1.5 block text-xs font-medium uppercase tracking-wide text-fog-400;
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[#64748B];
   }
   .th {
-    @apply sticky top-0 z-10 border-b border-ink-600 bg-ink-800 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wider text-fog-400;
+    @apply sticky top-0 z-10 border-b border-[#DCE5F0] bg-[#F4F8FD] px-3.5 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-[#172B45];
   }
   .td {
-    @apply border-b border-ink-700/70 px-3 py-2 align-top text-sm;
+    @apply border-b border-[#DCE5F0]/80 px-3.5 py-2.5 align-middle text-sm text-[#172B45];
   }
   .mono {
     @apply font-mono text-[12.5px];

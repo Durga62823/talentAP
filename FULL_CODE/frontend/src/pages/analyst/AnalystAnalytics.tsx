@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { RefreshCw, ShieldCheck } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import {
   Bar,
   BarChart,
@@ -15,6 +15,15 @@ import {
 import { Badge, Button, Card, Spinner } from "../../components/ui";
 import { apiAllowDenied } from "../../lib/api";
 import { useConnections } from "../../lib/connections";
+
+const tooltipStyle = {
+  backgroundColor: "#FFFFFF",
+  borderColor: "#DCE5F0",
+  borderRadius: "8px",
+  fontSize: "12px",
+  color: "#172B45",
+  boxShadow: "0 4px 12px rgba(18,59,103,0.08)",
+};
 
 export default function AnalystAnalytics() {
   const { selected } = useConnections();
@@ -92,15 +101,15 @@ export default function AnalystAnalytics() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#DCE5F0] pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="rounded-md border border-cyan/40 bg-cyan/10 px-2 py-0.5 text-xs font-semibold uppercase text-cyan">
+            <span className="rounded-md border border-[#DCE5F0] bg-[#EAF2FB] px-2 py-0.5 text-xs font-semibold uppercase text-[#123B67]">
               Transaction Intelligence
             </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-fog-100">Analytics Dashboard</h1>
-          <p className="text-sm text-fog-400">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#172B45] mt-1">Analytics Dashboard</h1>
+          <p className="text-xs sm:text-sm text-[#64748B]">
             Privacy-preserving aggregations across 100,000 transactions. Zero individual identities exposed.
           </p>
         </div>
@@ -114,19 +123,10 @@ export default function AnalystAnalytics() {
             drcrDataQ.refetch();
           }}
           icon={<RefreshCw className="h-3.5 w-3.5" />}
+          className="self-start sm:self-auto"
         >
           Refresh Figures
         </Button>
-      </div>
-
-      {/* Privacy Guarantee Banner */}
-      <div className="rounded-xl border border-ink-700 bg-ink-900/60 p-4">
-        <div className="flex items-start gap-3">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
-          <div className="text-xs leading-relaxed text-fog-300">
-            <strong className="text-fog-100">Zero Raw Data Exposure:</strong> Charts below are computed exclusively from server-side SQL aggregations (<code>COUNT(*)</code>, <code>SUM()</code>, <code>AVG()</code>). Queries requesting row-level card numbers, customer names, or non-aggregated balances are automatically sanitized or denied.
-          </div>
-        </div>
       </div>
 
       {/* Primary Chart: Channel Volume (Bar Chart) */}
@@ -140,30 +140,25 @@ export default function AnalystAnalytics() {
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={channelDataQ.data} margin={{ top: 10, right: 10, left: 10, bottom: 25 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#DCE5F0" />
                 <XAxis
                   dataKey="channel"
-                  stroke="#94A3B8"
+                  stroke="#64748B"
                   fontSize={11}
                   angle={-20}
                   textAnchor="end"
                 />
-                <YAxis stroke="#94A3B8" fontSize={11} tickFormatter={(v) => `₹${v}L`} />
+                <YAxis stroke="#64748B" fontSize={11} tickFormatter={(v) => `₹${v}L`} />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#0F172A",
-                    borderColor: "#334155",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                  }}
+                  contentStyle={tooltipStyle}
                   formatter={(value: any) => [`₹${Number(value).toLocaleString()} Lakhs`, "Volume"]}
                 />
-                <Bar dataKey="volumeLakhs" fill="#06B6D4" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="volumeLakhs" fill="#1D5FA7" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="py-8 text-center text-xs text-fog-400">No channel data available.</div>
+          <div className="py-8 text-center text-xs text-[#64748B]">No channel data available.</div>
         )}
       </Card>
 
@@ -193,17 +188,12 @@ export default function AnalystAnalytics() {
                       {statusDataQ.data.map((entry: any, index: number) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={entry.status === "SUCCESS" ? "#10B981" : "#F43F5E"}
+                          fill={entry.status === "SUCCESS" ? "#10B981" : "#E11D48"}
                         />
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#0F172A",
-                        borderColor: "#334155",
-                        borderRadius: "8px",
-                        fontSize: "12px",
-                      }}
+                      contentStyle={tooltipStyle}
                       formatter={(val: any) => [Number(val).toLocaleString(), "Count"]}
                     />
                   </PieChart>
@@ -215,11 +205,11 @@ export default function AnalystAnalytics() {
                   <div key={item.status} className="flex items-center gap-3">
                     <span
                       className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: item.status === "SUCCESS" ? "#10B981" : "#F43F5E" }}
+                      style={{ backgroundColor: item.status === "SUCCESS" ? "#10B981" : "#E11D48" }}
                     />
                     <div>
-                      <div className="font-semibold text-fog-100">{item.status}</div>
-                      <div className="text-fog-400">
+                      <div className="font-semibold text-[#172B45]">{item.status}</div>
+                      <div className="text-[#64748B]">
                         {item.count.toLocaleString()} txns (₹{(item.volume / 10000000).toFixed(2)} Cr)
                       </div>
                     </div>
@@ -228,7 +218,7 @@ export default function AnalystAnalytics() {
               </div>
             </div>
           ) : (
-            <div className="py-6 text-center text-xs text-fog-400">No status data available.</div>
+            <div className="py-6 text-center text-xs text-[#64748B]">No status data available.</div>
           )}
         </Card>
 
@@ -256,17 +246,12 @@ export default function AnalystAnalytics() {
                       {drcrDataQ.data.map((_: any, index: number) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={index === 0 ? "#6366F1" : "#06B6D4"}
+                          fill={index === 0 ? "#123B67" : "#3478C8"}
                         />
                       ))}
                     </Pie>
                     <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#0F172A",
-                        borderColor: "#334155",
-                        borderRadius: "8px",
-                        fontSize: "12px",
-                      }}
+                      contentStyle={tooltipStyle}
                       formatter={(val: any) => [Number(val).toLocaleString(), "Count"]}
                     />
                   </PieChart>
@@ -278,11 +263,11 @@ export default function AnalystAnalytics() {
                   <div key={item.type} className="flex items-center gap-3">
                     <span
                       className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: i === 0 ? "#6366F1" : "#06B6D4" }}
+                      style={{ backgroundColor: i === 0 ? "#123B67" : "#3478C8" }}
                     />
                     <div>
-                      <div className="font-semibold text-fog-100">{item.type}</div>
-                      <div className="text-fog-400">
+                      <div className="font-semibold text-[#172B45]">{item.type}</div>
+                      <div className="text-[#64748B]">
                         {item.count.toLocaleString()} txns (₹{(item.volume / 10000000).toFixed(2)} Cr)
                       </div>
                     </div>
@@ -291,7 +276,7 @@ export default function AnalystAnalytics() {
               </div>
             </div>
           ) : (
-            <div className="py-6 text-center text-xs text-fog-400">No DR/CR data available.</div>
+            <div className="py-6 text-center text-xs text-[#64748B]">No DR/CR data available.</div>
           )}
         </Card>
       </div>
@@ -303,24 +288,24 @@ export default function AnalystAnalytics() {
       >
         {channelDataQ.data && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-ink-700 text-fog-400">
+            <table className="w-full text-left text-xs min-w-[550px]">
+              <thead className="border-b border-[#DCE5F0] bg-[#F4F8FD] text-[#172B45]">
                 <tr>
-                  <th className="pb-2.5 font-medium">Payment Rail / Channel</th>
-                  <th className="pb-2.5 font-medium">Transaction Count</th>
-                  <th className="pb-2.5 font-medium">Total Volume (INR)</th>
-                  <th className="pb-2.5 font-medium">Average Ticket Size</th>
-                  <th className="pb-2.5 text-right font-medium">Privacy Status</th>
+                  <th className="py-2.5 px-3 font-semibold">Payment Rail / Channel</th>
+                  <th className="py-2.5 px-3 font-semibold">Transaction Count</th>
+                  <th className="py-2.5 px-3 font-semibold">Total Volume (INR)</th>
+                  <th className="py-2.5 px-3 font-semibold">Average Ticket Size</th>
+                  <th className="py-2.5 px-3 text-right font-semibold">Privacy Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ink-800 text-fog-200">
+              <tbody className="divide-y divide-[#DCE5F0] text-[#172B45]">
                 {channelDataQ.data.map((c: any) => (
-                  <tr key={c.channel} className="transition-colors hover:bg-ink-800/40">
-                    <td className="py-2.5 font-semibold text-fog-100">{c.channel}</td>
-                    <td className="py-2.5 font-mono text-cyan">{c.count.toLocaleString()}</td>
-                    <td className="py-2.5 font-mono text-fog-200">₹{c.volume.toLocaleString()}</td>
-                    <td className="py-2.5 font-mono text-emerald-300">₹{c.avgAmount.toLocaleString()}</td>
-                    <td className="py-2.5 text-right">
+                  <tr key={c.channel} className="transition-colors hover:bg-[#F4F8FD]">
+                    <td className="py-2.5 px-3 font-semibold text-[#172B45]">{c.channel}</td>
+                    <td className="py-2.5 px-3 font-mono font-medium text-[#1D5FA7]">{c.count.toLocaleString()}</td>
+                    <td className="py-2.5 px-3 font-mono">₹{c.volume.toLocaleString()}</td>
+                    <td className="py-2.5 px-3 font-mono font-medium text-emerald-700">₹{c.avgAmount.toLocaleString()}</td>
+                    <td className="py-2.5 px-3 text-right">
                       <Badge tone="cyan">k ≥ 5 Enforced</Badge>
                     </td>
                   </tr>

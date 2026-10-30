@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { RefreshCw, ShieldCheck } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import {
   Area,
   AreaChart as RechartsAreaChart,
@@ -13,6 +13,15 @@ import { Badge, Button, Card, Spinner } from "../../components/ui";
 import { apiAllowDenied } from "../../lib/api";
 import { useConnections } from "../../lib/connections";
 
+const tooltipStyle = {
+  backgroundColor: "#FFFFFF",
+  borderColor: "#DCE5F0",
+  borderRadius: "8px",
+  fontSize: "12px",
+  color: "#172B45",
+  boxShadow: "0 4px 12px rgba(18,59,103,0.08)",
+};
+
 export default function AnalystTrends() {
   const { selected } = useConnections();
 
@@ -21,8 +30,6 @@ export default function AnalystTrends() {
     queryKey: ["analyst-monthly-trends", selected?.id],
     queryFn: async () => {
       if (!selected?.id) return [];
-      // The SQL guard allows no functions besides COUNT/SUM/AVG/MIN/MAX, so bucket by month with
-      // one range-filtered aggregate per month (txn_ts is visible raw, so it may be filtered on).
       const run = (sql: string) => apiAllowDenied("/api/query/execute", { body: { connection_id: selected.id, sql } });
       const range = await run("SELECT MIN(txn_ts) AS first_ts, MAX(txn_ts) AS last_ts FROM transactions");
       const [first, last] = (range.ok && range.body?.rows?.[0]) || [];
@@ -55,15 +62,15 @@ export default function AnalystTrends() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[#DCE5F0] pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="rounded-md border border-cyan/40 bg-cyan/10 px-2 py-0.5 text-xs font-semibold uppercase text-cyan">
+            <span className="rounded-md border border-[#DCE5F0] bg-[#EAF2FB] px-2 py-0.5 text-xs font-semibold uppercase text-[#123B67]">
               Time-Series Intelligence
             </span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-fog-100">Transaction Trends</h1>
-          <p className="text-sm text-fog-400">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#172B45] mt-1">Transaction Trends</h1>
+          <p className="text-xs sm:text-sm text-[#64748B]">
             Temporal patterns and monthly velocity of financial transactions across Saffron Bank.
           </p>
         </div>
@@ -73,19 +80,10 @@ export default function AnalystTrends() {
           size="sm"
           onClick={() => trendsQ.refetch()}
           icon={<RefreshCw className="h-3.5 w-3.5" />}
+          className="self-start sm:self-auto"
         >
           Refresh Trends
         </Button>
-      </div>
-
-      {/* Privacy Notice */}
-      <div className="rounded-xl border border-ink-700 bg-ink-900/60 p-4">
-        <div className="flex items-start gap-3">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-cyan" />
-          <div className="text-xs leading-relaxed text-fog-300">
-            <strong className="text-fog-100">k-Anonymity Guard Enforced:</strong> Time-series buckets are aggregated at monthly resolution (k ≥ 5). Micro-time intervals that could isolate individual customer transactions are prohibited.
-          </div>
-        </div>
       </div>
 
       {/* Main Trend Chart */}
@@ -101,27 +99,22 @@ export default function AnalystTrends() {
               <RechartsAreaChart data={trendsQ.data} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
                 <defs>
                   <linearGradient id="volGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.4} />
-                    <stop offset="95%" stopColor="#06B6D4" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#1D5FA7" stopOpacity={0.35} />
+                    <stop offset="95%" stopColor="#1D5FA7" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2D3748" />
-                <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} />
-                <YAxis stroke="#94A3B8" fontSize={11} tickFormatter={(v) => `₹${v}Cr`} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#DCE5F0" />
+                <XAxis dataKey="month" stroke="#64748B" fontSize={11} />
+                <YAxis stroke="#64748B" fontSize={11} tickFormatter={(v) => `₹${v}Cr`} />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#0F172A",
-                    borderColor: "#334155",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                  }}
+                  contentStyle={tooltipStyle}
                   formatter={(val: any) => [`₹${Number(val).toLocaleString()} Cr`, "Monthly Volume"]}
                 />
                 <Area
                   type="monotone"
                   dataKey="volumeCrores"
-                  stroke="#06B6D4"
-                  strokeWidth={2}
+                  stroke="#1D5FA7"
+                  strokeWidth={2.5}
                   fillOpacity={1}
                   fill="url(#volGradient)"
                 />
@@ -129,7 +122,7 @@ export default function AnalystTrends() {
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="py-8 text-center text-xs text-fog-400">No trend data available.</div>
+          <div className="py-8 text-center text-xs text-[#64748B]">No trend data available.</div>
         )}
       </Card>
 
@@ -140,24 +133,24 @@ export default function AnalystTrends() {
       >
         {trendsQ.data && trendsQ.data.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-ink-700 text-fog-400">
+            <table className="w-full text-left text-xs min-w-[550px]">
+              <thead className="border-b border-[#DCE5F0] bg-[#F4F8FD] text-[#172B45]">
                 <tr>
-                  <th className="pb-2.5 font-medium">Month</th>
-                  <th className="pb-2.5 font-medium">Transactions Processed</th>
-                  <th className="pb-2.5 font-medium">Monthly Volume (INR)</th>
-                  <th className="pb-2.5 font-medium">Volume in Crores</th>
-                  <th className="pb-2.5 text-right font-medium">Status</th>
+                  <th className="py-2.5 px-3 font-semibold">Month</th>
+                  <th className="py-2.5 px-3 font-semibold">Transactions Processed</th>
+                  <th className="py-2.5 px-3 font-semibold">Monthly Volume (INR)</th>
+                  <th className="py-2.5 px-3 font-semibold">Volume in Crores</th>
+                  <th className="py-2.5 px-3 text-right font-semibold">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ink-800 text-fog-200">
+              <tbody className="divide-y divide-[#DCE5F0] text-[#172B45]">
                 {trendsQ.data.map((m: any) => (
-                  <tr key={m.month} className="transition-colors hover:bg-ink-800/40">
-                    <td className="py-2.5 font-mono font-semibold text-fog-100">{m.month}</td>
-                    <td className="py-2.5 font-mono text-cyan">{m.count.toLocaleString()}</td>
-                    <td className="py-2.5 font-mono text-fog-200">₹{m.volume.toLocaleString()}</td>
-                    <td className="py-2.5 font-mono text-emerald-300">₹{m.volumeCrores} Cr</td>
-                    <td className="py-2.5 text-right">
+                  <tr key={m.month} className="transition-colors hover:bg-[#F4F8FD]">
+                    <td className="py-2.5 px-3 font-mono font-semibold text-[#172B45]">{m.month}</td>
+                    <td className="py-2.5 px-3 font-mono font-medium text-[#1D5FA7]">{m.count.toLocaleString()}</td>
+                    <td className="py-2.5 px-3 font-mono">₹{m.volume.toLocaleString()}</td>
+                    <td className="py-2.5 px-3 font-mono font-medium text-emerald-700">₹{m.volumeCrores} Cr</td>
+                    <td className="py-2.5 px-3 text-right">
                       <Badge tone="green">Verified Safe</Badge>
                     </td>
                   </tr>

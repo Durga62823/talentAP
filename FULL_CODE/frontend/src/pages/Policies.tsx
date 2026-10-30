@@ -14,7 +14,7 @@ type Policy = {
 
 function Scope({ p }: { p: Policy }) {
   const parts = [];
-  if (p.table_name) parts.push(<span key="t" className="font-mono">{p.table_name}{p.column_name ? `.${p.column_name}` : ".*"}</span>);
+  if (p.table_name) parts.push(<span key="t" className="font-mono text-[#1D5FA7] font-semibold">{p.table_name}{p.column_name ? `.${p.column_name}` : ".*"}</span>);
   if (p.category) parts.push(<Badge key="c" tone="neutral">category {p.category}</Badge>);
   if (p.sensitivity) parts.push(<Badge key="s" tone="neutral">label {p.sensitivity}</Badge>);
   if (p.connection_id) parts.push(<Badge key="db" tone="indigo">one database</Badge>);
@@ -28,7 +28,7 @@ function Preview({ meta }: { meta: any }) {
   const m = useMutation({ mutationFn: () => api("/api/policies/preview", { body: { category, action, values: custom.trim() ? custom.split("\n").slice(0, 20) : undefined } }) });
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         <div>
           <label className="label">Category</label>
           <select className="input" value={category} onChange={(e) => setCategory(e.target.value)}>{meta.categories.map((c: string) => <option key={c}>{c}</option>)}</select>
@@ -43,12 +43,14 @@ function Preview({ meta }: { meta: any }) {
         <textarea className="input font-mono" rows={3} value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Leave empty to use built-in synthetic samples" />
       </div>
       <Button size="sm" variant="primary" onClick={() => m.mutate()} loading={m.isPending}>Preview</Button>
-      <p className="text-[11px] text-fog-500">{meta.actions[action]}</p>
+      <p className="text-[11px] text-[#64748B]">{meta.actions[action]}</p>
       {m.data && (
-        <table className="w-full">
-          <thead><tr><th className="th">Input</th><th className="th">Output</th></tr></thead>
-          <tbody>{m.data.results.map((r: any, i: number) => <tr key={i}><td className="td mono text-fog-400">{r.input}</td><td className="td mono"><Value v={r.output} /></td></tr>)}</tbody>
-        </table>
+        <div className="overflow-x-auto rounded-lg border border-[#DCE5F0]">
+          <table className="w-full text-xs">
+            <thead><tr><th className="th">Input</th><th className="th">Output</th></tr></thead>
+            <tbody>{m.data.results.map((r: any, i: number) => <tr key={i} className="hover:bg-[#F4F8FD]"><td className="td mono text-[#64748B]">{r.input}</td><td className="td mono font-medium text-[#172B45]"><Value v={r.output} /></td></tr>)}</tbody>
+          </table>
+        </div>
       )}
     </div>
   );
@@ -71,9 +73,9 @@ function PolicyForm({ meta, onClose, initial }: { meta: any; onClose: () => void
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
   const locked = !!initial;
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2">
-        <div className="col-span-2"><label className="label">Name</label><input className="input" value={f.name} onChange={set("name")} /></div>
+    <div className="space-y-3.5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <div className="sm:col-span-2"><label className="label">Name</label><input className="input" value={f.name} onChange={set("name")} /></div>
         <div><label className="label">Role</label>
           <select className="input" value={f.role} onChange={set("role")} disabled={locked}>{["admin", "support", "analyst", "compliance"].map((r) => <option key={r}>{r}</option>)}</select></div>
         <div><label className="label">Transformation</label>
@@ -87,24 +89,24 @@ function PolicyForm({ meta, onClose, initial }: { meta: any; onClose: () => void
           <select className="input" value={f.category} onChange={set("category")} disabled={locked}><option value="">Any</option>{meta.categories.map((c: string) => <option key={c}>{c}</option>)}</select></div>
         <div><label className="label">Sensitivity</label>
           <select className="input" value={f.sensitivity} onChange={set("sensitivity")} disabled={locked}><option value="">Any</option>{meta.labels.map((c: string) => <option key={c}>{c}</option>)}</select></div>
-        <div className="col-span-2"><label className="label">Description</label><input className="input" value={f.description} onChange={set("description")} /></div>
+        <div className="sm:col-span-2"><label className="label">Description</label><input className="input" value={f.description} onChange={set("description")} /></div>
       </div>
-      <p className="text-[11px] text-fog-500">{meta.actions[f.action]}</p>
+      <p className="text-[11px] text-[#64748B]">{meta.actions[f.action]}</p>
       {!locked && (
-        <div className="rounded-lg border border-ink-700 p-3">
+        <div className="rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-fog-400">Simulate against {selected?.name} without saving</span>
+            <span className="text-xs font-semibold text-[#172B45]">Simulate against {selected?.name} without saving</span>
             <Button size="sm" icon={<FlaskConical className="h-3.5 w-3.5" />} onClick={() => sim.mutate()} loading={sim.isPending}>Simulate</Button>
           </div>
           <ErrorText error={sim.error} />
           {sim.data && (
-            <div className="mt-2 text-xs">
-              <div className="mb-1 text-fog-300">{sim.data.affected_columns} column(s) would change for role {sim.data.role}:</div>
+            <div className="mt-2.5 text-xs text-[#172B45]">
+              <div className="mb-1 font-semibold text-[#123B67]">{sim.data.affected_columns} column(s) would change for role {sim.data.role}:</div>
               <ul className="space-y-1">
                 {sim.data.changes.map((c: any) => (
                   <li key={c.table + c.column} className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono">{c.table}.{c.column}</span> <ActionBadge action={c.current} /> → <ActionBadge action={c.proposed} />
-                    <span className="font-mono text-fog-500">“{c.synthetic_example.input}” → <Value v={c.synthetic_example.proposed} /></span>
+                    <span className="font-mono font-semibold">{c.table}.{c.column}</span> <ActionBadge action={c.current} /> → <ActionBadge action={c.proposed} />
+                    <span className="font-mono text-[#64748B]">“{c.synthetic_example.input}” → <Value v={c.synthetic_example.proposed} /></span>
                   </li>
                 ))}
               </ul>
@@ -113,7 +115,7 @@ function PolicyForm({ meta, onClose, initial }: { meta: any; onClose: () => void
         </div>
       )}
       <ErrorText error={save.error} />
-      <div className="flex justify-end gap-2"><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" loading={save.isPending} onClick={() => save.mutate()}>{initial ? "Save new version" : "Create policy"}</Button></div>
+      <div className="flex justify-end gap-2 pt-2 border-t border-[#DCE5F0]"><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" loading={save.isPending} onClick={() => save.mutate()}>{initial ? "Save new version" : "Create policy"}</Button></div>
     </div>
   );
 }
@@ -122,17 +124,19 @@ function Versions({ id }: { id: number }) {
   const q = useQuery({ queryKey: ["versions", id], queryFn: () => api(`/api/policies/${id}/versions`) });
   if (q.isLoading) return <Spinner />;
   return (
-    <table className="w-full">
-      <thead><tr><th className="th">Version</th><th className="th">Change</th><th className="th">Action</th><th className="th">Active</th><th className="th">By</th><th className="th">When</th></tr></thead>
-      <tbody>
-        {q.data.map((v: any) => (
-          <tr key={v.version}>
-            <td className="td">v{v.version}</td><td className="td"><Badge>{v.change_type}</Badge></td><td className="td"><ActionBadge action={v.snapshot.action} /></td>
-            <td className="td">{v.snapshot.active ? "yes" : "no"}</td><td className="td">{v.changed_by}</td><td className="td text-xs text-fog-400">{fmtTime(v.changed_at)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs min-w-[500px]">
+        <thead><tr><th className="th">Version</th><th className="th">Change</th><th className="th">Action</th><th className="th">Active</th><th className="th">By</th><th className="th">When</th></tr></thead>
+        <tbody>
+          {q.data.map((v: any) => (
+            <tr key={v.version} className="hover:bg-[#F4F8FD]">
+              <td className="td font-semibold text-[#172B45]">v{v.version}</td><td className="td"><Badge>{v.change_type}</Badge></td><td className="td"><ActionBadge action={v.snapshot.action} /></td>
+              <td className="td font-medium">{v.snapshot.active ? "yes" : "no"}</td><td className="td text-[#64748B]">{v.changed_by}</td><td className="td text-xs text-[#64748B]">{fmtTime(v.changed_at)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -154,27 +158,28 @@ export default function PoliciesPage() {
     <div>
       <PageHeader
         title="Masking Policy Studio"
+        description="Configure role-based column transformation rules, preview synthetic outputs, and test impacts via dry-run simulations."
         actions={<Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => setCreating(true)}>New policy</Button>}
       />
       <div className="grid gap-4 xl:grid-cols-[1fr_380px]">
-        <Card title="Policies" subtitle={`${rows.length} shown · every change creates a new version and an audit event`} actions={<Tabs value={role} onChange={setRole} items={[{ value: "all", label: "All" }, { value: "admin", label: "Admin" }, { value: "support", label: "Support" }, { value: "analyst", label: "Analyst" }, { value: "compliance", label: "Compliance" }]} />}>
+        <Card title="Policies" subtitle={`${rows.length} shown · changes versioned and cryptographically audited`} actions={<Tabs value={role} onChange={setRole} items={[{ value: "all", label: "All" }, { value: "admin", label: "Admin" }, { value: "support", label: "Support" }, { value: "analyst", label: "Analyst" }, { value: "compliance", label: "Compliance" }]} />}>
           {q.isLoading ? <Spinner /> : (
-            <div className="-mx-5 -mb-5 max-h-[720px] overflow-auto">
-              <table className="w-full min-w-[820px]">
+            <div className="-mx-4 sm:-mx-5 -mb-4 sm:-mb-5 max-h-[720px] overflow-x-auto">
+              <table className="w-full min-w-[750px]">
                 <thead><tr><th className="th">Role</th><th className="th">Scope</th><th className="th">Transformation</th><th className="th">Specificity</th><th className="th">Version</th><th className="th">Status</th><th className="th text-right">Actions</th></tr></thead>
                 <tbody>
                   {rows.map((p) => (
-                    <tr key={p.id} className={p.active ? "" : "opacity-50"}>
+                    <tr key={p.id} className={p.active ? "hover:bg-[#F4F8FD] transition-colors" : "opacity-50 hover:bg-[#F4F8FD]"}>
                       <td className="td"><RoleChip role={p.role} /></td>
-                      <td className="td"><div className="text-[13px]">{p.name}</div><Scope p={p} />{p.description && <div className="mt-0.5 text-[11px] text-fog-500">{p.description}</div>}</td>
+                      <td className="td"><div className="text-[13px] font-semibold text-[#172B45]">{p.name}</div><Scope p={p} />{p.description && <div className="mt-0.5 text-[11px] text-[#64748B]">{p.description}</div>}</td>
                       <td className="td"><ActionBadge action={p.action} /></td>
-                      <td className="td tabular-nums text-fog-400">{p.specificity}{p.priority ? ` · p${p.priority}` : ""}</td>
-                      <td className="td text-xs text-fog-400">v{p.version}<div>{p.updated_by}</div></td>
+                      <td className="td tabular-nums text-[#64748B] font-medium">{p.specificity}{p.priority ? ` · p${p.priority}` : ""}</td>
+                      <td className="td text-xs text-[#64748B]">v{p.version}<div className="text-[10px]">{p.updated_by}</div></td>
                       <td className="td">{p.active ? <Badge tone="green">active</Badge> : <Badge>inactive</Badge>}</td>
                       <td className="td"><div className="flex justify-end gap-1">
                         <Button size="sm" variant="ghost" onClick={() => setEditing(p)}>Edit</Button>
-                        <Button size="sm" variant="ghost" aria-label="History" onClick={() => setHistory(p)}><History className="h-3.5 w-3.5" /></Button>
-                        <Button size="sm" variant="ghost" aria-label={p.active ? "Deactivate" : "Activate"} onClick={() => toggle.mutate(p)}><Power className={`h-3.5 w-3.5 ${p.active ? "text-emerald-300" : ""}`} /></Button>
+                        <Button size="sm" variant="ghost" aria-label="History" onClick={() => setHistory(p)}><History className="h-3.5 w-3.5 text-[#1D5FA7]" /></Button>
+                        <Button size="sm" variant="ghost" aria-label={p.active ? "Deactivate" : "Activate"} onClick={() => toggle.mutate(p)}><Power className={`h-3.5 w-3.5 ${p.active ? "text-emerald-600" : "text-[#64748B]"}`} /></Button>
                       </div></td>
                     </tr>
                   ))}
@@ -185,9 +190,6 @@ export default function PoliciesPage() {
         </Card>
         <div className="space-y-4">
           <Card title="Preview a transformation" subtitle="Synthetic data only">{meta.data ? <Preview meta={meta.data} /> : <Spinner />}</Card>
-
-
-
         </div>
       </div>
       <Modal open={creating} onClose={() => setCreating(false)} title="New masking policy" wide>{meta.data && <PolicyForm meta={meta.data} onClose={() => setCreating(false)} />}</Modal>

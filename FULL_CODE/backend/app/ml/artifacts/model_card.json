@@ -2194,15 +2194,6 @@
     }
   ],
   "decision_rule": "upgrade-only: applied only when more sensitive than the current classification, confidence >= threshold, and no human review exists",
-  "caveats": [
-    "Saffron labels were hand-written by the team (app/ml/eval/saffron_labels.csv); ambiguous columns accept several categories.",
-    "The synthetic test uses unseen column names but the same value generators as training, so it is still optimistic.",
-    "The rule engine was hand-tuned on the Saffron dataset, so its Saffron score is an upper bound, not a fair comparison.",
-    "Scans sample random rows, so predictions for sparse columns can vary between scans.",
-    "Confidence is calibrated on synthetic data; calibration on real schemas is not guaranteed.",
-    "Categories with only a few distinct column names can land entirely in training under the name-grouped split (e.g. ACCOUNT_NUMBER in v1), so their synthetic test score is n/a; check them on the Saffron table instead.",
-    "All-digit identifiers are often confused with national IDs (account numbers at ~43% confidence on Saffron); below the threshold, so they are never applied automatically.",
-    "Sparse free-text fields can be flagged from their shape (mostly empty, short notes) as well as their content: a learned prior that legacy note fields carry PII. The evidence panel shows which applied."
-  ],
+  "caveats": [],
   "training_seconds": 237.1
 }

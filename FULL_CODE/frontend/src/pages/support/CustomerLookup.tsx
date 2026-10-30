@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, Eye, Search, Shield, User } from "lucide-react";
+import { AlertCircle, Eye, Search, User } from "lucide-react";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Alert, Badge, Button, Card, Spinner } from "../../components/ui";
@@ -32,11 +32,8 @@ export default function CustomerLookup() {
     queryFn: async () => {
       if (!selected?.id || !searchTerm) return null;
 
-      // Customer IDs are alphanumeric with dashes; anything else would only break the SQL.
       const term = searchTerm.toUpperCase().replace(/[^A-Z0-9-]/g, "");
 
-      // Only customer_id may be filtered on: the server rejects WHERE on masked columns (name,
-      // phone) because filtering would reveal them by inference.
       const sql = /^CIF-[A-Z0-9]{8}$/.test(term)
         ? `SELECT customer_id, cust_nm, mob_no, emailid, city, state, segment, dob_dt FROM customers WHERE customer_id = '${term}' LIMIT 10`
         : `SELECT customer_id, cust_nm, mob_no, emailid, city, state, segment, dob_dt FROM customers WHERE customer_id LIKE '%${term}%' LIMIT 15`;
@@ -50,18 +47,16 @@ export default function CustomerLookup() {
     enabled: !!selected?.id && !!searchTerm,
   });
 
-  const sampleCifs = ["CIF-00UKL72D", "CIF-007IS5OP", "CIF-0080J9GL", "CIF-007KK65R", "CIF-UGZKM7GD", "CIF-2FOFTGNB"];
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 border-b border-[#DCE5F0] pb-4">
         <div className="flex items-center gap-2">
-          <span className="rounded-md border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 text-xs font-semibold uppercase text-amber-300">
+          <span className="rounded-md border border-[#DCE5F0] bg-[#EAF2FB] px-2 py-0.5 text-xs font-semibold uppercase text-[#123B67]">
             Customer Identification & Verification
           </span>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight text-fog-100">Customer Lookup</h1>
-        <p className="text-sm text-fog-400">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#172B45] mt-1">Customer Lookup</h1>
+        <p className="text-xs sm:text-sm text-[#64748B]">
           Find customer accounts across Saffron Bank database. Permitted fields are delivered with role-approved partial masking.
         </p>
       </div>
@@ -70,7 +65,7 @@ export default function CustomerLookup() {
       <Card title="Search Customers" subtitle="Search by full or partial Customer ID. Names and phones are masked, so they cannot be searched.">
         <form onSubmit={handleSearch} className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-fog-500" />
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#64748B]" />
             <input
               type="text"
               className="input pl-9 text-sm"
@@ -92,33 +87,7 @@ export default function CustomerLookup() {
             <Alert tone="error">{validationError}</Alert>
           </div>
         )}
-
-        <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-fog-400">
-          <span className="font-medium text-fog-300">Quick Test Records:</span>
-          {sampleCifs.map((cif) => (
-            <button
-              key={cif}
-              type="button"
-              onClick={() => {
-                setInputVal(cif);
-                setSearchTerm(cif);
-                setSearchParams({ q: cif });
-              }}
-              className="rounded border border-ink-600 bg-ink-800 px-2 py-1 font-mono text-[11px] text-amber-200 transition-colors hover:border-amber-400 hover:bg-ink-700"
-            >
-              {cif}
-            </button>
-          ))}
-        </div>
       </Card>
-
-      {/* Privacy Notice Banner */}
-      <div className="flex items-center gap-2 rounded-lg border border-ink-700 bg-ink-900/50 px-4 py-2.5 text-xs text-fog-400">
-        <Shield className="h-4 w-4 text-amber-400 shrink-0" />
-        <span>
-          <strong className="text-fog-200">Active Privacy Enforcement:</strong> All customer names, phone numbers, and emails shown below have been sanitized on the server prior to network transmission.
-        </span>
-      </div>
 
       {/* Results State */}
       {lookupQ.isLoading ? (
@@ -130,15 +99,15 @@ export default function CustomerLookup() {
       ) : lookupQ.data && !lookupQ.data.ok ? (
         /* Access Denied or Backend Error State */
         <Card>
-          <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-6">
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 shadow-sm">
             <div className="flex items-start gap-3">
-              <AlertCircle className="h-6 w-6 text-rose-400 shrink-0 mt-0.5" />
+              <AlertCircle className="h-6 w-6 text-rose-600 shrink-0 mt-0.5" />
               <div>
-                <h3 className="text-sm font-semibold text-rose-200">Query Restricted / Access Denied</h3>
-                <p className="mt-1 text-xs text-rose-300/90 leading-relaxed">
+                <h3 className="text-sm font-bold text-rose-900">Query Restricted / Access Denied</h3>
+                <p className="mt-1 text-xs text-rose-800 leading-relaxed font-medium">
                   {lookupQ.data.body?.error?.message || "The query could not be executed under your role's current security policies."}
                 </p>
-                <div className="mt-3 text-[11px] font-mono text-rose-400">
+                <div className="mt-3 text-[11px] font-mono text-rose-700">
                   Code: {lookupQ.data.body?.error?.code || "policy_rejection"} · Status: {lookupQ.data.status}
                 </div>
               </div>
@@ -150,10 +119,10 @@ export default function CustomerLookup() {
         lookupQ.data.body.rows.length === 0 ? (
           <Card>
             <div className="py-12 text-center">
-              <User className="mx-auto h-8 w-8 text-fog-500" />
-              <h3 className="mt-2 text-sm font-medium text-fog-200">No Customers Found</h3>
-              <p className="mt-1 text-xs text-fog-400">
-                No customer records matched "{searchTerm}". Try another Customer ID or name.
+              <User className="mx-auto h-8 w-8 text-[#64748B]" />
+              <h3 className="mt-2 text-sm font-semibold text-[#172B45]">No Customers Found</h3>
+              <p className="mt-1 text-xs text-[#64748B]">
+                No customer records matched "{searchTerm}". Try another Customer ID.
               </p>
             </div>
           </Card>
@@ -163,51 +132,51 @@ export default function CustomerLookup() {
             subtitle="Click on any customer to open their Customer 360 profile"
           >
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="border-b border-ink-700 text-fog-400">
+              <table className="w-full text-left text-xs min-w-[750px]">
+                <thead className="border-b border-[#DCE5F0] bg-[#F4F8FD] text-[#172B45]">
                   <tr>
-                    <th className="pb-2.5 font-medium">Customer ID</th>
-                    <th className="pb-2.5 font-medium">
-                      Customer Name <span className="text-[10px] text-amber-400">(Masked)</span>
+                    <th className="py-2.5 px-3 font-semibold">Customer ID</th>
+                    <th className="py-2.5 px-3 font-semibold">
+                      Customer Name <span className="text-[10px] text-[#1D5FA7]">(Masked)</span>
                     </th>
-                    <th className="pb-2.5 font-medium">
-                      Mobile Number <span className="text-[10px] text-amber-400">(Masked)</span>
+                    <th className="py-2.5 px-3 font-semibold">
+                      Mobile Number <span className="text-[10px] text-[#1D5FA7]">(Masked)</span>
                     </th>
-                    <th className="pb-2.5 font-medium">
-                      Email Address <span className="text-[10px] text-amber-400">(Masked)</span>
+                    <th className="py-2.5 px-3 font-semibold">
+                      Email Address <span className="text-[10px] text-[#1D5FA7]">(Masked)</span>
                     </th>
-                    <th className="pb-2.5 font-medium">Location</th>
-                    <th className="pb-2.5 font-medium">Segment</th>
-                    <th className="pb-2.5 text-right font-medium">Action</th>
+                    <th className="py-2.5 px-3 font-semibold">Location</th>
+                    <th className="py-2.5 px-3 font-semibold">Segment</th>
+                    <th className="py-2.5 px-3 text-right font-semibold">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-ink-800 text-fog-200">
+                <tbody className="divide-y divide-[#DCE5F0] text-[#172B45]">
                   {lookupQ.data.body.rows.map((row: any[], i: number) => {
                     const [cif, name, mob, email, city, state, seg] = row;
                     return (
-                      <tr key={cif || i} className="transition-colors hover:bg-ink-800/40">
-                        <td className="py-3 font-mono font-medium text-cyan">
+                      <tr key={cif || i} className="transition-colors hover:bg-[#F4F8FD]">
+                        <td className="py-3 px-3 font-mono font-semibold text-[#1D5FA7]">
                           {cif}
                         </td>
-                        <td className="py-3">
-                          <div className="font-medium text-fog-100">{name}</div>
+                        <td className="py-3 px-3">
+                          <div className="font-semibold text-[#172B45]">{name}</div>
                           <Badge tone="amber" className="mt-0.5 text-[10px]">Partially Masked</Badge>
                         </td>
-                        <td className="py-3 font-mono text-fog-300">
+                        <td className="py-3 px-3 font-mono text-[#172B45]">
                           <div>{mob}</div>
                           <Badge tone="amber" className="mt-0.5 text-[10px]">Partially Masked</Badge>
                         </td>
-                        <td className="py-3 text-fog-300">
+                        <td className="py-3 px-3 text-[#172B45]">
                           <div>{email}</div>
                           <Badge tone="amber" className="mt-0.5 text-[10px]">Partially Masked</Badge>
                         </td>
-                        <td className="py-3 text-fog-300">
+                        <td className="py-3 px-3 text-[#64748B]">
                           {city && state ? `${city}, ${state}` : city || state || "—"}
                         </td>
-                        <td className="py-3">
+                        <td className="py-3 px-3">
                           <Badge tone="cyan">{seg || "RETAIL"}</Badge>
                         </td>
-                        <td className="py-3 text-right">
+                        <td className="py-3 px-3 text-right">
                           <Link to={`/support/profiles?id=${encodeURIComponent(cif)}`}>
                             <Button size="sm" variant="secondary" icon={<Eye className="h-3.5 w-3.5" />}>
                               View 360° Profile
@@ -221,7 +190,7 @@ export default function CustomerLookup() {
               </table>
             </div>
 
-            <div className="mt-4 border-t border-ink-800 pt-3 text-right text-[11px] text-fog-500">
+            <div className="mt-4 border-t border-[#DCE5F0] pt-3 text-right text-[11px] text-[#64748B]">
               Query completed in {lookupQ.data.body.duration_ms} ms · Enforced server-side masking on {lookupQ.data.body.decisions?.length || 8} columns
             </div>
           </Card>
@@ -230,9 +199,9 @@ export default function CustomerLookup() {
         /* Initial Empty Search State */
         <Card>
           <div className="py-12 text-center">
-            <Search className="mx-auto h-8 w-8 text-fog-500" />
-            <h3 className="mt-2 text-sm font-medium text-fog-200">Enter a customer query</h3>
-            <p className="mt-1 text-xs text-fog-400 max-w-sm mx-auto">
+            <Search className="mx-auto h-8 w-8 text-[#64748B]" />
+            <h3 className="mt-2 text-sm font-semibold text-[#172B45]">Enter a customer query</h3>
+            <p className="mt-1 text-xs text-[#64748B] max-w-sm mx-auto">
               Type a Customer ID like <code>CIF-00UKL72D</code>, or part of one, to look up customer records safely.
             </p>
           </div>

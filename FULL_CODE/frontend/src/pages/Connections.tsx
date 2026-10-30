@@ -36,15 +36,24 @@ function AddConnection({ open, onClose }: { open: boolean; onClose: () => void }
   return (
     <Modal open={open} onClose={onClose} title="Register database connection">
       <form
-        className="space-y-3"
+        className="space-y-3.5"
         onSubmit={(e) => {
           e.preventDefault();
           m.mutate();
         }}
       >
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {(["mysql", "postgresql", "sqlite"] as const).map((k) => (
-            <button type="button" key={k} onClick={() => pick(k)} className={`rounded-lg border px-3 py-2 text-sm ${kind === k ? "border-accent bg-accent/10" : "border-ink-600 text-fog-400"}`}>
+            <button
+              type="button"
+              key={k}
+              onClick={() => pick(k)}
+              className={`rounded-lg border px-3 py-2 text-sm font-semibold transition-all ${
+                kind === k
+                  ? "border-[#1D5FA7] bg-[#EAF2FB] text-[#123B67] shadow-sm"
+                  : "border-[#DCE5F0] bg-white text-[#64748B] hover:bg-[#F4F8FD] hover:text-[#172B45]"
+              }`}
+            >
               {KIND_LABEL[k]}
             </button>
           ))}
@@ -57,11 +66,11 @@ function AddConnection({ open, onClose }: { open: boolean; onClose: () => void }
           <div>
             <label className="label">Database file (inside data/targets)</label>
             <input className="input font-mono" placeholder="bank.db" value={f.file} onChange={set("file")} required />
-            <p className="mt-1 text-[11px] text-fog-500">Plain file names only — paths and traversal are rejected server-side.</p>
+            <p className="mt-1 text-[11px] text-[#64748B]">Plain file names only — paths and traversal are rejected server-side.</p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-[1fr_100px] gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_100px] gap-2.5">
               <div>
                 <label className="label">Host</label>
                 <input className="input" value={f.host} onChange={set("host")} required />
@@ -71,7 +80,7 @@ function AddConnection({ open, onClose }: { open: boolean; onClose: () => void }
                 <input className="input" value={f.port} onChange={set("port")} inputMode="numeric" required />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               <div>
                 <label className="label">Database</label>
                 <input className="input" value={f.database} onChange={set("database")} required />
@@ -84,8 +93,8 @@ function AddConnection({ open, onClose }: { open: boolean; onClose: () => void }
             <div>
               <label className="label">Password</label>
               <input className="input" type="password" value={f.password} onChange={set("password")} autoComplete="new-password" />
-              <p className="mt-1 flex items-center gap-1 text-[11px] text-fog-500">
-                <KeyRound className="h-3 w-3" /> Encrypted at rest on the server and never returned to the browser.
+              <p className="mt-1 flex items-center gap-1 text-[11px] text-[#64748B]">
+                <KeyRound className="h-3 w-3 text-[#1D5FA7]" /> Encrypted at rest on the server and never returned to the browser.
               </p>
             </div>
             <div>
@@ -102,7 +111,7 @@ function AddConnection({ open, onClose }: { open: boolean; onClose: () => void }
           </>
         )}
         <ErrorText error={m.error} />
-        <div className="flex justify-end gap-2 pt-1">
+        <div className="flex justify-end gap-2 pt-2 border-t border-[#DCE5F0]">
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
@@ -121,13 +130,13 @@ function SchemaView({ conn }: { conn: Conn }) {
   if (q.isLoading) return <Spinner label="Reading schema…" />;
   if (q.error) return <ErrorText error={q.error} />;
   return (
-    <div className="divide-y divide-ink-700/70 rounded-lg border border-ink-700">
+    <div className="divide-y divide-[#DCE5F0] rounded-lg border border-[#DCE5F0] bg-white overflow-hidden shadow-sm">
       {q.data.tables.map((t: any) => (
         <div key={t.table}>
-          <button className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-ink-800/60" onClick={() => setOpen(open === t.table ? null : t.table)}>
-            {open === t.table ? <ChevronDown className="h-4 w-4 text-fog-500" /> : <ChevronRight className="h-4 w-4 text-fog-500" />}
-            <span className="font-mono">{t.schema}.{t.table}</span>
-            <span className="text-xs text-fog-500">{t.row_count} rows · {t.columns.length} columns</span>
+          <button className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm hover:bg-[#F4F8FD] transition-colors" onClick={() => setOpen(open === t.table ? null : t.table)}>
+            {open === t.table ? <ChevronDown className="h-4 w-4 text-[#64748B]" /> : <ChevronRight className="h-4 w-4 text-[#64748B]" />}
+            <span className="font-mono font-semibold text-[#172B45]">{t.schema}.{t.table}</span>
+            <span className="text-xs text-[#64748B]">{t.row_count} rows · {t.columns.length} columns</span>
             <span className="ml-auto flex gap-1">
               {(() => {
                 const n = t.columns.filter((c: any) => ["PII_HIGH", "PII_MEDIUM", "FINANCIAL_CONFIDENTIAL"].includes(c.classification?.sensitivity)).length;
@@ -142,30 +151,32 @@ function SchemaView({ conn }: { conn: Conn }) {
             </span>
           </button>
           {open === t.table && (
-            <table className="w-full">
-              <thead>
-                <tr>
-                  <th className="th">Column</th>
-                  <th className="th">Type</th>
-                  <th className="th">Category</th>
-                  <th className="th">Sensitivity</th>
-                </tr>
-              </thead>
-              <tbody>
-                {t.columns.map((c: any) => (
-                  <tr key={c.name}>
-                    <td className="td mono">
-                      {c.name} {c.primary_key && <Badge>PK</Badge>}
-                    </td>
-                    <td className="td mono text-fog-400">{c.type}</td>
-                    <td className="td text-xs">{c.classification?.category ?? <span className="text-rose-300">unclassified</span>}</td>
-                    <td className="td">
-                      <SensBadge label={c.classification?.sensitivity} />
-                    </td>
+            <div className="overflow-x-auto border-t border-[#DCE5F0]">
+              <table className="w-full text-xs min-w-[500px]">
+                <thead>
+                  <tr>
+                    <th className="th">Column</th>
+                    <th className="th">Type</th>
+                    <th className="th">Category</th>
+                    <th className="th">Sensitivity</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {t.columns.map((c: any) => (
+                    <tr key={c.name} className="hover:bg-[#F4F8FD]">
+                      <td className="td mono font-semibold text-[#172B45]">
+                        {c.name} {c.primary_key && <Badge tone="indigo">PK</Badge>}
+                      </td>
+                      <td className="td mono text-[#64748B]">{c.type}</td>
+                      <td className="td text-xs font-medium text-[#172B45]">{c.classification?.category ?? <span className="text-rose-700">unclassified</span>}</td>
+                      <td className="td">
+                        <SensBadge label={c.classification?.sensitivity} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       ))}
@@ -214,7 +225,7 @@ export default function ConnectionsPage() {
     <div>
       <PageHeader
         title="Database Connections"
-
+        description="Register and manage external SQLite, PostgreSQL, and MySQL data sources with health checks and automated schema introspection."
         actions={
           <Button variant="primary" icon={<Plus className="h-4 w-4" />} onClick={() => setAdding(true)}>
             Add connection
@@ -229,7 +240,7 @@ export default function ConnectionsPage() {
       {isLoading ? (
         <Spinner />
       ) : connections.length === 0 ? (
-        <Empty icon={<Database className="h-8 w-8" />} title="No connections" action={<Button onClick={() => setAdding(true)}>Add connection</Button>}>
+        <Empty icon={<Database className="h-8 w-8 text-[#1D5FA7]" />} title="No connections" action={<Button onClick={() => setAdding(true)}>Add connection</Button>}>
           Register SQLite, MySQL or PostgreSQL to begin discovery.
         </Empty>
       ) : (
@@ -238,8 +249,8 @@ export default function ConnectionsPage() {
             <Card
               key={c.id}
               title={
-                <span className="flex items-center gap-2">
-                  <Database className="h-4 w-4 text-fog-400" /> {c.name}
+                <span className="flex flex-wrap items-center gap-2">
+                  <Database className="h-4 w-4 text-[#1D5FA7]" /> {c.name}
                   <Badge tone={c.kind === "sqlite" ? "cyan" : c.kind === "mysql" ? "amber" : "indigo"}>{KIND_LABEL[c.kind] ?? c.kind}</Badge>
                   <Badge tone={c.status === "healthy" ? "green" : c.status === "unhealthy" ? "red" : "neutral"}>{c.status}</Badge>
                 </span>
@@ -250,7 +261,7 @@ export default function ConnectionsPage() {
                   : `${c.params.username}@${c.params.host}:${c.params.port}/${c.params.database} · schemas: ${c.allowed_schemas.join(", ")} · password ${c.has_password ? "stored (encrypted)" : "none"}`
               }
               actions={
-                <>
+                <div className="flex flex-wrap items-center gap-1.5">
                   <Button size="sm" icon={<Plug className="h-3.5 w-3.5" />} loading={test.isPending && test.variables === c.id} onClick={() => test.mutate(c.id)}>
                     Test
                   </Button>
@@ -268,14 +279,14 @@ export default function ConnectionsPage() {
                   >
                     Remove
                   </Button>
-                </>
+                </div>
               }
             >
-              <div className="flex flex-wrap gap-x-8 gap-y-1 text-xs text-fog-400">
-                <span>Tables classified: <b className="text-fog-100">{c.tables_classified}</b></span>
+              <div className="flex flex-wrap gap-x-8 gap-y-1 text-xs text-[#64748B]">
+                <span>Tables classified: <b className="text-[#172B45] font-semibold">{c.tables_classified}</b></span>
                 <span>Last test: {fmtTime(c.last_tested_at)}</span>
                 <span>Last scan: {c.last_scan ? `${c.last_scan.status} · ${fmtTime(c.last_scan.finished_at)}` : "never"}</span>
-                {c.status === "unhealthy" && <span className="text-rose-300">{c.status_detail}</span>}
+                {c.status === "unhealthy" && <span className="text-rose-700 font-medium">{c.status_detail}</span>}
               </div>
               {expanded === c.id && (
                 <div className="mt-4">

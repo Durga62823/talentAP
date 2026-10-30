@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Minus, Search, ShieldCheck, UserPlus } from "lucide-react";
+import { Check, Minus, Search, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Badge, Button, Card, ErrorText, Modal, PageHeader, Spinner } from "../../components/ui";
 import { RoleChip } from "../../components/Layout";
@@ -27,7 +27,7 @@ function Grants() {
   });
 
   if (!selected) {
-    return <p className="text-xs text-fog-400">Select a database connection to view and manage table grants.</p>;
+    return <p className="text-xs text-[#64748B]">Select a database connection to view and manage table grants.</p>;
   }
   if (q.isLoading || rolesQ.isLoading) return <Spinner />;
   if (q.error) return <ErrorText error={q.error} />;
@@ -39,8 +39,8 @@ function Grants() {
 
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div className="overflow-x-auto rounded-lg border border-[#DCE5F0]">
+        <table className="w-full text-xs min-w-[500px]">
           <thead>
             <tr>
               <th className="th">Table</th>
@@ -53,8 +53,8 @@ function Grants() {
           </thead>
           <tbody>
             {tables.map((t: string) => (
-              <tr key={t}>
-                <td className="td mono font-medium">{t}</td>
+              <tr key={t} className="hover:bg-[#F4F8FD]">
+                <td className="td mono font-semibold text-[#172B45]">{t}</td>
                 {roles.map((r) => {
                   const on = (draft[r] ?? []).includes(t);
                   return (
@@ -62,7 +62,9 @@ function Grants() {
                       <button
                         aria-label={`${on ? "Revoke" : "Grant"} ${t} for ${r}`}
                         onClick={() => toggle(r, t)}
-                        className={`inline-grid h-6 w-6 place-items-center rounded-md border ${on ? "border-emerald-400/50 bg-emerald-400/15 text-emerald-300" : "border-ink-600 text-fog-500 hover:border-ink-500"
+                        className={`inline-grid h-6 w-6 place-items-center rounded-md border transition-all ${on
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-800 shadow-sm"
+                          : "border-[#DCE5F0] bg-white text-[#64748B] hover:border-[#3478C8]"
                           }`}
                       >
                         {on ? <Check className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}
@@ -75,14 +77,13 @@ function Grants() {
           </tbody>
         </table>
       </div>
-      <div className="flex flex-wrap justify-end gap-2">
+      <div className="flex flex-wrap justify-end gap-2 pt-1">
         {roles.map((r) => (
           <Button key={r} size="sm" loading={save.isPending && save.variables === r} onClick={() => save.mutate(r)}>
             Save {r} grants
           </Button>
         ))}
       </div>
-
     </div>
   );
 }
@@ -138,23 +139,13 @@ export default function UserManagement() {
     <div className="space-y-6">
       <PageHeader
         title="User & Access Governance"
-
+        description="Manage authenticated user identities, role assignments, database table grant matrices, and security privileges."
         actions={
           <Button variant="primary" icon={<UserPlus className="h-4 w-4" />} onClick={() => setAdding(true)}>
             Add New User
           </Button>
         }
       />
-
-      {/* Security Architecture Banner */}
-      <div className="rounded-xl border border-ink-700 bg-ink-900/60 p-4">
-        <div className="flex items-start gap-3">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
-          <div className="text-xs leading-relaxed text-fog-300">
-            <strong className="text-fog-100">Role-Based Access Control (RBAC):</strong> Demo identities are seeded with strict least-privilege configurations. Modifying a user's role or status immediately invalidates active sessions in the database.
-          </div>
-        </div>
-      </div>
 
       {/* Users Section with Search & Filter */}
       <Card
@@ -163,20 +154,20 @@ export default function UserManagement() {
       >
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 sm:max-w-xs">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-fog-500" />
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#64748B]" />
             <input
               type="text"
-              className="input h-8 pl-8 text-xs"
+              className="input h-9 pl-8 text-xs"
               placeholder="Search user by name or username..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-fog-400">Filter Role:</span>
+          <div className="flex items-center gap-2 text-xs w-full sm:w-auto">
+            <span className="text-[#64748B] font-semibold shrink-0">Filter Role:</span>
             <select
-              className="input h-8 py-0 text-xs w-auto"
+              className="input h-9 py-0 text-xs flex-1 sm:w-auto"
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
             >
@@ -195,31 +186,31 @@ export default function UserManagement() {
           <ErrorText error={users.error} />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-ink-700 text-fog-400">
+            <table className="w-full text-left text-xs min-w-[650px]">
+              <thead className="border-b border-[#DCE5F0] bg-[#F4F8FD] text-[#172B45]">
                 <tr>
-                  <th className="pb-2.5 font-medium">User & Display Name</th>
-                  <th className="pb-2.5 font-medium">Official Email Address</th>
-                  <th className="pb-2.5 font-medium">Role Assignment</th>
-                  <th className="pb-2.5 font-medium">Account Status</th>
-                  <th className="pb-2.5 text-right font-medium">Actions</th>
+                  <th className="py-2.5 px-3 font-semibold">User & Display Name</th>
+                  <th className="py-2.5 px-3 font-semibold">Official Email Address</th>
+                  <th className="py-2.5 px-3 font-semibold">Role Assignment</th>
+                  <th className="py-2.5 px-3 font-semibold">Account Status</th>
+                  <th className="py-2.5 px-3 text-right font-semibold">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-ink-800 text-fog-200">
+              <tbody className="divide-y divide-[#DCE5F0] text-[#172B45]">
                 {filteredUsers.map((u) => {
                   const email = emailMap[u.username] || `${u.username}@saffronbank.example`;
                   return (
-                    <tr key={u.id} className="transition-colors hover:bg-ink-800/40">
-                      <td className="py-3">
-                        <div className="font-semibold text-fog-100">{u.display_name}</div>
-                        <div className="font-mono text-[11px] text-fog-400">@{u.username}</div>
+                    <tr key={u.id} className="transition-colors hover:bg-[#F4F8FD]">
+                      <td className="py-3 px-3">
+                        <div className="font-semibold text-[#172B45]">{u.display_name}</div>
+                        <div className="font-mono text-[11px] text-[#64748B]">@{u.username}</div>
                       </td>
-                      <td className="py-3 font-mono text-fog-300">
+                      <td className="py-3 px-3 font-mono text-[#64748B]">
                         {email}
                       </td>
-                      <td className="py-3">
+                      <td className="py-3 px-3">
                         <select
-                          className="input h-7 w-auto py-0 text-xs"
+                          className="input h-8 w-auto py-0 text-xs font-semibold"
                           value={u.role}
                           disabled={u.id === me?.id}
                           onChange={(e) => patch.mutate({ id: u.id, body: { role: e.target.value } })}
@@ -232,12 +223,12 @@ export default function UserManagement() {
                           ))}
                         </select>
                       </td>
-                      <td className="py-3">
+                      <td className="py-3 px-3">
                         <Badge tone={u.active ? "green" : "neutral"}>
                           {u.active ? "ACTIVE" : "SUSPENDED"}
                         </Badge>
                       </td>
-                      <td className="py-3 text-right">
+                      <td className="py-3 px-3 text-right">
                         <Button
                           size="sm"
                           variant="ghost"
@@ -260,42 +251,34 @@ export default function UserManagement() {
       <div className="grid gap-6 xl:grid-cols-2">
         <Card title="Role Permission Summaries" subtitle="Configured system access boundaries">
           <div className="space-y-3 text-xs">
-            <div className="rounded-lg border border-ink-700 bg-ink-900/40 p-3.5">
+            <div className="rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <RoleChip role="admin" />
-                  <span className="font-semibold text-fog-100">Data Protection Administrator</span>
+                  <span className="font-semibold text-[#172B45]">Data Protection Administrator</span>
                 </div>
                 <Badge tone="green">Full View + Break-Glass</Badge>
               </div>
-
             </div>
 
-            <div className="rounded-lg border border-ink-700 bg-ink-900/40 p-3.5">
+            <div className="rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <RoleChip role="support" />
-                  <span className="font-semibold text-fog-100">Customer Support Agent</span>
+                  <span className="font-semibold text-[#172B45]">Customer Support Agent</span>
                 </div>
                 <Badge tone="amber">Partial Masking</Badge>
               </div>
-
             </div>
 
-            <div className="rounded-lg border border-ink-700 bg-ink-900/40 p-3.5">
+            <div className="rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <RoleChip role="analyst" />
-                  <span className="font-semibold text-fog-100">Data Analyst</span>
+                  <span className="font-semibold text-[#172B45]">Data Analyst</span>
                 </div>
                 <Badge tone="cyan">k-Anonymity (k ≥ 5)</Badge>
               </div>
-
-            </div>
-
-            <div className="rounded-lg border border-ink-700 bg-ink-900/40 p-3.5">
-
-
             </div>
           </div>
         </Card>
@@ -314,7 +297,7 @@ export default function UserManagement() {
               e.preventDefault();
               create.mutate();
             }}
-            className="space-y-3"
+            className="space-y-3.5"
           >
             <div>
               <label className="label">Username</label>
@@ -361,7 +344,7 @@ export default function UserManagement() {
               />
             </div>
             <ErrorText error={create.error} />
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#DCE5F0]">
               <Button variant="ghost" onClick={() => setAdding(false)}>
                 Cancel
               </Button>

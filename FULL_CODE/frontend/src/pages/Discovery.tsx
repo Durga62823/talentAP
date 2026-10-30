@@ -36,7 +36,6 @@ type AiInfo = {
   rule_sensitivity: string; error_code: string; model: string; prompt_version: string; features: Record<string, any>; updated_at: string | null;
 };
 
-// What each AI outcome means for masking (upgrade-only: the AI can raise protection, never lower it).
 const AI_STATUS: Record<AiInfo["status"], { tone: string; label: string; hint: string }> = {
   APPLIED: { tone: "indigo", label: "AI upgraded", hint: "AI found this column more sensitive than the rules; its classification is now active." },
   AGREES: { tone: "green", label: "Agrees", hint: "AI and rules agree." },
@@ -53,10 +52,10 @@ function Confidence({ v }: { v: number }) {
   const pct = Math.round(v * 100);
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-14 overflow-hidden rounded-full bg-ink-700">
-        <div className={`h-full rounded-full ${pct >= 85 ? "bg-emerald-400" : pct >= 65 ? "bg-amber-400" : "bg-rose-400"}`} style={{ width: `${pct}%` }} />
+      <div className="h-1.5 w-14 overflow-hidden rounded-full bg-[#EEF3F9]">
+        <div className={`h-full rounded-full ${pct >= 85 ? "bg-emerald-600" : pct >= 65 ? "bg-amber-500" : "bg-rose-500"}`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-xs tabular-nums text-fog-400">{pct}%</span>
+      <span className="text-xs font-medium tabular-nums text-[#64748B]">{pct}%</span>
     </div>
   );
 }
@@ -113,19 +112,19 @@ export default function DiscoveryPage() {
     <div>
       <PageHeader
         title="PII Discovery"
-
+        description="Automated PII detection via regular expressions, heuristic rules, local ML models, and LLM contextual verification."
         actions={
           <>
             <Button icon={<Download className="h-4 w-4" />} onClick={() => download("/api/classifications/export.csv")}>
               Export CSV
             </Button>
-            <label className="flex items-center gap-1.5 text-xs text-fog-300" title="Classify with the locally trained ML model (runs on this server)">
-              <input type="checkbox" checked={useMl} onChange={(e) => setUseMl(e.target.checked)} />
-              <BrainCircuit className="h-3.5 w-3.5 text-[#A8ADFF]" /> ML model
+            <label className="flex items-center gap-1.5 text-xs font-medium text-[#172B45] cursor-pointer" title="Classify with the locally trained ML model">
+              <input type="checkbox" checked={useMl} onChange={(e) => setUseMl(e.target.checked)} className="rounded text-[#1D5FA7]" />
+              <BrainCircuit className="h-3.5 w-3.5 text-[#1D5FA7]" /> ML model
             </label>
-            <label className="flex items-center gap-1.5 text-xs text-fog-300" title="Send sanitized column statistics (never values) to Gemini">
-              <input type="checkbox" checked={useAi} onChange={(e) => setUseAi(e.target.checked)} />
-              <Sparkles className="h-3.5 w-3.5 text-[#A8ADFF]" /> Gemini AI
+            <label className="flex items-center gap-1.5 text-xs font-medium text-[#172B45] cursor-pointer" title="Send sanitized column statistics to Gemini">
+              <input type="checkbox" checked={useAi} onChange={(e) => setUseAi(e.target.checked)} className="rounded text-[#1D5FA7]" />
+              <Sparkles className="h-3.5 w-3.5 text-[#1D5FA7]" /> Gemini AI
             </label>
             <Button variant="primary" icon={<Radar className="h-4 w-4" />} onClick={() => scan.mutate()} loading={scan.isPending} disabled={!selected}>
               {scan.isPending && useAi ? "Scanning with AI…" : `Scan ${selected?.name ?? ""}`}
@@ -133,7 +132,6 @@ export default function DiscoveryPage() {
           </>
         }
       />
-
 
       {scan.data && (
         <div className="mb-4">
@@ -148,7 +146,7 @@ export default function DiscoveryPage() {
         title="Classifications"
         subtitle={selected ? `${selected.name} · ${rows.length} columns shown` : "Select a database"}
         actions={
-          <>
+          <div className="flex flex-wrap items-center gap-2">
             <select className="input h-8 w-auto py-0 text-xs" value={table} onChange={(e) => setTable(e.target.value)} aria-label="Filter table">
               <option value="">All tables</option>
               {tables.map((t) => (
@@ -156,18 +154,18 @@ export default function DiscoveryPage() {
               ))}
             </select>
             <Tabs value={filter} onChange={setFilter} items={[{ value: "sensitive", label: "Detected" }, { value: "pending", label: "Pending review" }, { value: "ai", label: "ML / AI findings" }, { value: "all", label: "All columns" }]} />
-          </>
+          </div>
         }
       >
         {q.isLoading ? (
           <Spinner />
         ) : !rows.length ? (
-          <Empty icon={<Radar className="h-8 w-8" />} title="Nothing to show" action={<Button onClick={() => scan.mutate()}>Run a scan</Button>}>
+          <Empty icon={<Radar className="h-8 w-8 text-[#1D5FA7]" />} title="Nothing to show" action={<Button onClick={() => scan.mutate()}>Run a scan</Button>}>
             No columns match this filter yet.
           </Empty>
         ) : (
-          <div className="-mx-5 -mb-5 max-h-[640px] overflow-auto">
-            <table className="w-full min-w-[1480px]">
+          <div className="-mx-4 sm:-mx-5 -mb-4 sm:-mb-5 max-h-[640px] overflow-x-auto">
+            <table className="w-full min-w-[1200px]">
               <thead>
                 <tr>
                   <th className="th">Table.column</th>
@@ -184,38 +182,38 @@ export default function DiscoveryPage() {
               </thead>
               <tbody>
                 {rows.map((c) => (
-                  <tr key={c.id} className="hover:bg-ink-800/40">
+                  <tr key={c.id} className="hover:bg-[#F4F8FD] transition-colors">
                     <td className="td">
-                      <div className="mono">{c.table}.<b className="font-semibold text-fog-100">{c.column}</b></div>
-                      <div className="text-[11px] text-fog-500">{c.data_type} · {c.source}</div>
+                      <div className="mono font-semibold text-[#172B45]">{c.table}.<b>{c.column}</b></div>
+                      <div className="text-[11px] text-[#64748B]">{c.data_type} · {c.source}</div>
                     </td>
-                    <td className="td text-xs">
+                    <td className="td text-xs font-medium text-[#172B45]">
                       {c.category}
-                      {c.category !== c.detected_category && <div className="text-[11px] text-fog-500">detected: {c.detected_category}</div>}
+                      {c.category !== c.detected_category && <div className="text-[11px] text-[#64748B]">detected: {c.detected_category}</div>}
                     </td>
                     <td className="td"><SensBadge label={c.sensitivity} /></td>
                     <td className="td"><Confidence v={c.confidence} /></td>
-                    <td className="td max-w-[340px] text-xs text-fog-400">
-                      <div className="text-fog-300">{c.detection_method}</div>
-                      <div>{c.evidence}</div>
+                    <td className="td max-w-[340px] text-xs text-[#64748B]">
+                      <div className="font-semibold text-[#172B45]">{c.detection_method}</div>
+                      <div className="truncate">{c.evidence}</div>
                     </td>
-                    <td className="td min-w-[180px]"><MlCell c={c} onOpen={() => setMlEvidence(c)} /></td>
-                    <td className="td min-w-[190px]"><AiCell c={c} onOpen={() => setEvidence(c)} /></td>
+                    <td className="td min-w-[170px]"><MlCell c={c} onOpen={() => setMlEvidence(c)} /></td>
+                    <td className="td min-w-[180px]"><AiCell c={c} onOpen={() => setEvidence(c)} /></td>
                     <td className="td"><ActionBadge action={c.suggested_masking} /></td>
                     <td className="td">
                       <Badge tone={REVIEW_TONE[c.review_status]}>{c.review_status}</Badge>
-                      {c.reviewed_by && <div className="mt-0.5 text-[11px] text-fog-500">by {c.reviewed_by}</div>}
+                      {c.reviewed_by && <div className="mt-0.5 text-[11px] text-[#64748B]">by {c.reviewed_by}</div>}
                     </td>
                     <td className="td">
                       <div className="flex justify-end gap-1">
                         <Button size="sm" variant="ghost" title="Approve" aria-label="Approve" onClick={() => review.mutate({ id: c.id, body: { decision: "approve" } })}>
-                          <Check className="h-3.5 w-3.5 text-emerald-300" />
+                          <Check className="h-3.5 w-3.5 text-emerald-600" />
                         </Button>
                         <Button size="sm" variant="ghost" title="Reject (not sensitive)" aria-label="Reject" onClick={() => review.mutate({ id: c.id, body: { decision: "reject" } })}>
-                          <X className="h-3.5 w-3.5 text-rose-300" />
+                          <X className="h-3.5 w-3.5 text-rose-600" />
                         </Button>
                         <Button size="sm" variant="ghost" title="Correct category / sensitivity" aria-label="Override" onClick={() => setEditing(c)}>
-                          <PencilLine className="h-3.5 w-3.5" />
+                          <PencilLine className="h-3.5 w-3.5 text-[#1D5FA7]" />
                         </Button>
                       </div>
                     </td>
@@ -229,32 +227,34 @@ export default function DiscoveryPage() {
 
       <Card title="Scan history" className="mt-4">
         {scans.data?.length ? (
-          <table className="w-full">
-            <thead>
-              <tr>
-                <th className="th">Finished</th>
-                <th className="th">Database</th>
-                <th className="th">Status</th>
-                <th className="th">Tables</th>
-                <th className="th">Columns</th>
-                <th className="th">Sensitive</th>
-                <th className="th">Sample size</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scans.data.map((s: any) => (
-                <tr key={s.id}>
-                  <td className="td text-xs text-fog-400">{fmtTime(s.finished_at)}</td>
-                  <td className="td">{s.connection_name}</td>
-                  <td className="td"><Badge tone={s.status === "completed" ? "green" : "red"}>{s.status}</Badge> <span className="text-xs text-rose-300">{s.error}</span></td>
-                  <td className="td tabular-nums">{s.tables_scanned}</td>
-                  <td className="td tabular-nums">{s.columns_scanned}</td>
-                  <td className="td tabular-nums">{s.sensitive_found}</td>
-                  <td className="td tabular-nums text-fog-400">≤ {s.sample_size} rows/table</td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[700px]">
+              <thead>
+                <tr>
+                  <th className="th">Finished</th>
+                  <th className="th">Database</th>
+                  <th className="th">Status</th>
+                  <th className="th">Tables</th>
+                  <th className="th">Columns</th>
+                  <th className="th">Sensitive</th>
+                  <th className="th">Sample size</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {scans.data.map((s: any) => (
+                  <tr key={s.id} className="hover:bg-[#F4F8FD] transition-colors">
+                    <td className="td text-xs text-[#64748B]">{fmtTime(s.finished_at)}</td>
+                    <td className="td font-medium text-[#172B45]">{s.connection_name}</td>
+                    <td className="td"><Badge tone={s.status === "completed" ? "green" : "red"}>{s.status}</Badge> <span className="text-xs text-rose-600">{s.error}</span></td>
+                    <td className="td tabular-nums text-[#172B45]">{s.tables_scanned}</td>
+                    <td className="td tabular-nums text-[#172B45]">{s.columns_scanned}</td>
+                    <td className="td tabular-nums text-[#172B45]">{s.sensitive_found}</td>
+                    <td className="td tabular-nums text-[#64748B]">≤ {s.sample_size} rows/table</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <Empty title="No scans yet" />
         )}
@@ -292,7 +292,7 @@ function OverrideForm({ c, meta, onSave, busy, error }: { c: Cls; meta: any; onS
           {meta.labels.map((x: string) => <option key={x}>{x}</option>)}
         </select>
       </div>
-      <p className="text-xs text-fog-400">Overrides are persisted, audited, and respected by later scans. Masking policies match on the effective category and label.</p>
+      <p className="text-xs text-[#64748B]">Overrides are persisted, audited, and respected by later scans. Masking policies match on the effective category and label.</p>
       <ErrorText error={error} />
       <div className="flex justify-end">
         <Button variant="primary" loading={busy} onClick={() => onSave({ decision: "override", category, sensitivity })}>Save override</Button>
@@ -303,7 +303,7 @@ function OverrideForm({ c, meta, onSave, busy, error }: { c: Cls; meta: any; onS
 
 function AiCell({ c, onOpen }: { c: Cls; onOpen: () => void }) {
   const a = c.ai;
-  if (!a) return <span className="text-xs text-fog-500">not scanned with AI</span>;
+  if (!a) return <span className="text-xs text-[#64748B]">not scanned with AI</span>;
   const st = AI_STATUS[a.status];
   return (
     <button type="button" onClick={onOpen} className="w-full text-left" title={st.hint}>
@@ -312,11 +312,11 @@ function AiCell({ c, onOpen }: { c: Cls; onOpen: () => void }) {
         {DETECTED[a.detected_by] && <Badge tone="neutral">{DETECTED[a.detected_by]}</Badge>}
       </div>
       {a.category && (
-        <div className="mt-1 text-xs text-fog-300">
-          {a.category} <span className="text-fog-500">· {Math.round((a.confidence ?? 0) * 100)}% est.</span>
+        <div className="mt-1 text-xs text-[#172B45] font-medium">
+          {a.category} <span className="text-[#64748B]">· {Math.round((a.confidence ?? 0) * 100)}% est.</span>
         </div>
       )}
-      <div className="text-[11px] text-[#A8ADFF] underline-offset-2 hover:underline">View evidence</div>
+      <div className="text-[11px] font-semibold text-[#1D5FA7] underline-offset-2 hover:underline">View evidence</div>
     </button>
   );
 }
@@ -326,52 +326,52 @@ function AiEvidence({ c }: { c: Cls }) {
   const st = AI_STATUS[a.status];
   const feats = Object.entries(a.features ?? {}).filter(([k]) => k !== "rule_engine");
   return (
-    <div className="space-y-3 text-sm">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg border border-ink-700 p-3">
-          <div className="text-xs text-fog-400">Rule-based engine</div>
-          <div className="mt-1 font-medium">{a.rule_category || c.detected_category}</div>
-          <SensBadge label={a.rule_sensitivity || c.detected_sensitivity} />
+    <div className="space-y-3.5 text-sm text-[#172B45]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3">
+          <div className="text-xs font-medium text-[#64748B]">Rule-based engine</div>
+          <div className="mt-1 font-semibold text-[#172B45]">{a.rule_category || c.detected_category}</div>
+          <div className="mt-1"><SensBadge label={a.rule_sensitivity || c.detected_sensitivity} /></div>
         </div>
-        <div className="rounded-lg border border-ink-700 p-3">
-          <div className="text-xs text-fog-400">Gemini AI</div>
+        <div className="rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3">
+          <div className="text-xs font-medium text-[#64748B]">Gemini AI</div>
           {a.category ? (
             <>
-              <div className="mt-1 font-medium">{a.category} {a.pii_type && a.pii_type !== "NONE" && <span className="text-xs text-fog-400">({a.pii_type})</span>}</div>
-              <SensBadge label={a.sensitivity ?? ""} />
+              <div className="mt-1 font-semibold text-[#172B45]">{a.category} {a.pii_type && a.pii_type !== "NONE" && <span className="text-xs text-[#64748B]">({a.pii_type})</span>}</div>
+              <div className="mt-1"><SensBadge label={a.sensitivity ?? ""} /></div>
             </>
           ) : (
-            <div className="mt-1 text-rose-300">No result ({a.error_code ? a.error_code.replace(/_/g, " ") : "unavailable"})</div>
+            <div className="mt-1 text-rose-700">No result ({a.error_code ? a.error_code.replace(/_/g, " ") : "unavailable"})</div>
           )}
         </div>
       </div>
       <Alert tone={a.status === "APPLIED" ? "success" : a.status === "AI_UNAVAILABLE" ? "error" : "info"} title={st.label}>{st.hint}</Alert>
       {a.category && (
-        <div className="space-y-1">
-          <div><span className="text-fog-400">Reason:</span> {a.reason}</div>
+        <div className="space-y-1.5 text-xs">
+          <div><span className="font-semibold text-[#64748B]">Reason:</span> <span className="text-[#172B45]">{a.reason}</span></div>
           <div>
-            <span className="text-fog-400">Confidence:</span> {Math.round((a.confidence ?? 0) * 100)}%{" "}
-            <span className="text-xs text-fog-500">(the model's own estimate, not a statistically calibrated probability)</span>
+            <span className="font-semibold text-[#64748B]">Confidence:</span> <span className="font-bold text-[#172B45]">{Math.round((a.confidence ?? 0) * 100)}%</span>{" "}
+            <span className="text-[#64748B]">(the model's estimate)</span>
           </div>
-          <div><span className="text-fog-400">Identifier kind:</span> {a.identifier_kind}{a.needs_review && <Badge tone="amber" className="ml-2">model asked for review</Badge>}</div>
+          <div><span className="font-semibold text-[#64748B]">Identifier kind:</span> <span className="text-[#172B45]">{a.identifier_kind}</span>{a.needs_review && <Badge tone="amber" className="ml-2">model asked for review</Badge>}</div>
         </div>
       )}
       <div>
-        <div className="mb-1 text-xs font-medium text-fog-300">{a.category ? "Sanitized features sent to the model" : "Sanitized features prepared for the model (not sent)"} · no data values</div>
-        <div className="max-h-56 overflow-auto rounded-lg border border-ink-700 bg-ink-900/60 p-2 font-mono text-[11px] text-fog-300">
+        <div className="mb-1 text-xs font-semibold text-[#172B45]">{a.category ? "Sanitized features sent to model" : "Sanitized features prepared for model"} · no raw values</div>
+        <div className="max-h-56 overflow-auto rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-2.5 font-mono text-[11px] text-[#172B45]">
           {feats.length ? feats.map(([k, v]) => (
-            <div key={k} className="flex justify-between gap-4"><span className="text-fog-500">{k}</span><span>{String(v)}</span></div>
-          )) : <span className="text-fog-500">No features (column could not be summarised safely).</span>}
+            <div key={k} className="flex justify-between gap-4 py-0.5 border-b border-[#DCE5F0]/50"><span className="text-[#64748B]">{k}</span><span className="font-medium">{String(v)}</span></div>
+          )) : <span className="text-[#64748B]">No features (column could not be summarised safely).</span>}
         </div>
       </div>
-      <div className="text-[11px] text-fog-500">Model {a.model} · prompt {a.prompt_version} · {a.updated_at ? fmtTime(a.updated_at) : ""}</div>
+      <div className="text-[11px] text-[#64748B]">Model {a.model} · prompt {a.prompt_version} · {a.updated_at ? fmtTime(a.updated_at) : ""}</div>
     </div>
   );
 }
 
 function MlCell({ c, onOpen }: { c: Cls; onOpen: () => void }) {
   const m = c.ml;
-  if (!m) return <span className="text-xs text-fog-500">not scanned with ML</span>;
+  if (!m) return <span className="text-xs text-[#64748B]">not scanned with ML</span>;
   const st = ML_STATUS[m.status];
   return (
     <button type="button" onClick={onOpen} className="w-full text-left" title={st.hint}>
@@ -380,11 +380,11 @@ function MlCell({ c, onOpen }: { c: Cls; onOpen: () => void }) {
         {m.detected_by === "ML" && <Badge tone="neutral">ML detected</Badge>}
       </div>
       {m.category && (
-        <div className="mt-1 text-xs text-fog-300">
-          {m.category} <span className="text-fog-500">· {Math.round((m.confidence ?? 0) * 100)}%</span>
+        <div className="mt-1 text-xs text-[#172B45] font-medium">
+          {m.category} <span className="text-[#64748B]">· {Math.round((m.confidence ?? 0) * 100)}%</span>
         </div>
       )}
-      <div className="text-[11px] text-[#A8ADFF] underline-offset-2 hover:underline">Why?</div>
+      <div className="text-[11px] font-semibold text-[#1D5FA7] underline-offset-2 hover:underline">Why?</div>
     </button>
   );
 }
@@ -393,22 +393,22 @@ function MlEvidence({ c }: { c: Cls }) {
   const m = c.ml!;
   const st = ML_STATUS[m.status];
   return (
-    <div className="space-y-3 text-sm">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-lg border border-ink-700 p-3">
-          <div className="text-xs text-fog-400">Rule-based engine</div>
-          <div className="mt-1 font-medium">{m.rule_category || c.detected_category}</div>
-          <SensBadge label={m.rule_sensitivity || c.detected_sensitivity} />
+    <div className="space-y-3.5 text-sm text-[#172B45]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3">
+          <div className="text-xs font-medium text-[#64748B]">Rule-based engine</div>
+          <div className="mt-1 font-semibold text-[#172B45]">{m.rule_category || c.detected_category}</div>
+          <div className="mt-1"><SensBadge label={m.rule_sensitivity || c.detected_sensitivity} /></div>
         </div>
-        <div className="rounded-lg border border-ink-700 p-3">
-          <div className="text-xs text-fog-400">ML model {m.model_version && `(${m.model_version})`}</div>
+        <div className="rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3">
+          <div className="text-xs font-medium text-[#64748B]">ML model {m.model_version && `(${m.model_version})`}</div>
           {m.category ? (
             <>
-              <div className="mt-1 font-medium">{m.category}</div>
-              <SensBadge label={m.sensitivity ?? ""} />
+              <div className="mt-1 font-semibold text-[#172B45]">{m.category}</div>
+              <div className="mt-1"><SensBadge label={m.sensitivity ?? ""} /></div>
             </>
           ) : (
-            <div className="mt-1 text-rose-300">No result: {m.error || "unavailable"}</div>
+            <div className="mt-1 text-rose-700">No result: {m.error || "unavailable"}</div>
           )}
         </div>
       </div>
@@ -416,32 +416,32 @@ function MlEvidence({ c }: { c: Cls }) {
       {m.category && (
         <>
           <div>
-            <div className="mb-1 text-xs font-medium text-fog-300">Top predictions (calibrated probability)</div>
+            <div className="mb-1 text-xs font-semibold text-[#172B45]">Top predictions (calibrated probability)</div>
             {m.top.map((t) => (
-              <div key={t.category} className="flex items-center gap-2 text-xs">
-                <span className="w-40 font-mono text-fog-300">{t.category}</span>
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink-700"><div className="h-full rounded-full bg-[#8b93ff]" style={{ width: `${t.probability * 100}%` }} /></div>
-                <span className="w-10 text-right tabular-nums text-fog-400">{Math.round(t.probability * 100)}%</span>
+              <div key={t.category} className="flex items-center gap-2 text-xs py-0.5">
+                <span className="w-36 font-mono font-medium text-[#172B45]">{t.category}</span>
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#EEF3F9]"><div className="h-full rounded-full bg-[#1D5FA7]" style={{ width: `${t.probability * 100}%` }} /></div>
+                <span className="w-10 text-right tabular-nums text-[#64748B] font-medium">{Math.round(t.probability * 100)}%</span>
               </div>
             ))}
           </div>
           <div>
-            <div className="mb-1 text-xs font-medium text-fog-300">Why: evidence that most supports "{m.category}"</div>
+            <div className="mb-1 text-xs font-semibold text-[#172B45]">Why: evidence that most supports "{m.category}"</div>
             {m.reasons.length ? (
               <ul className="space-y-1 text-xs">
                 {m.reasons.map((r) => (
-                  <li key={r.feature} className="flex justify-between gap-3">
-                    <span>{r.evidence}</span>
-                    <span className="tabular-nums text-emerald-300">+{Math.round(r.impact * 100)} pts</span>
+                  <li key={r.feature} className="flex justify-between gap-3 border-b border-[#DCE5F0]/50 py-0.5">
+                    <span className="text-[#172B45]">{r.evidence}</span>
+                    <span className="tabular-nums font-semibold text-emerald-700">+{Math.round(r.impact * 100)} pts</span>
                   </li>
                 ))}
               </ul>
-            ) : <div className="text-xs text-fog-500">No single feature dominates; the prediction comes from many weak signals.</div>}
-            <div className="mt-1 text-[11px] text-fog-500">Impact = how much the probability drops when that signal is reset to a typical value.</div>
+            ) : <div className="text-xs text-[#64748B]">No single feature dominates; the prediction comes from many weak signals.</div>}
+            <div className="mt-1 text-[11px] text-[#64748B]">Impact = how much the probability drops when that signal is reset to a typical value.</div>
           </div>
         </>
       )}
-      <div className="text-[11px] text-fog-500">Runs on this server; no data is sent anywhere. {m.updated_at ? fmtTime(m.updated_at) : ""}</div>
+      <div className="text-[11px] text-[#64748B]">Runs locally on this server; no raw data is sent externally. {m.updated_at ? fmtTime(m.updated_at) : ""}</div>
     </div>
   );
 }

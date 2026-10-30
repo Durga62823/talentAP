@@ -1,13 +1,13 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import clsx from "clsx";
-import { Ban, ChevronDown, ChevronRight, Columns3, Eye, KeyRound, Play, ShieldAlert, ShieldCheck, Timer, UserCheck } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Ban, ChevronDown, ChevronRight, Eye, Play, ShieldAlert, Timer, UserCheck } from "lucide-react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { RoleChip } from "../components/Layout";
-import { ActionBadge, Alert, Badge, Button, Card, Empty, ErrorText, SensBadge, Spinner, Tabs, Value } from "../components/ui";
+import { ActionBadge, Alert, Badge, Button, Card, Empty, ErrorText, PageHeader, SensBadge, Spinner, Tabs, Value } from "../components/ui";
 import { api, apiAllowDenied } from "../lib/api";
-import { DEMO_ACCOUNTS, useAuth } from "../lib/auth";
-import { KIND_LABEL, useConnections } from "../lib/connections";
+import { useAuth } from "../lib/auth";
+import { useConnections } from "../lib/connections";
 
 type Decision = { name: string; kind: string; source: string | null; aggregate: string | null; action: string; category: string | null; sensitivity: string | null; policy_id: number | null; policy_name: string | null; reason: string };
 type Result = {
@@ -20,8 +20,8 @@ function ResultTable({ r, compact }: { r: Result; compact?: boolean }) {
   if (!r.columns) return null;
   const actions = Object.fromEntries((r.decisions ?? []).map((d, i) => [i, d.action]));
   return (
-    <div className={clsx("overflow-auto rounded-lg border border-ink-700", compact ? "max-h-80" : "max-h-[420px]")}>
-      <table className="w-full">
+    <div className={clsx("overflow-x-auto rounded-lg border border-[#DCE5F0]", compact ? "max-h-80" : "max-h-[420px]")}>
+      <table className="w-full text-xs min-w-[600px]">
         <thead>
           <tr>
             {r.columns.map((c, i) => (
@@ -35,9 +35,9 @@ function ResultTable({ r, compact }: { r: Result; compact?: boolean }) {
         </thead>
         <tbody>
           {r.rows!.map((row, i) => (
-            <tr key={i} className="hover:bg-ink-800/40">
+            <tr key={i} className="hover:bg-[#F4F8FD] transition-colors">
               {row.map((v, j) => (
-                <td key={j} className="td mono whitespace-nowrap">
+                <td key={j} className="td mono whitespace-nowrap text-[#172B45]">
                   <Value v={v} />
                 </td>
               ))}
@@ -45,21 +45,21 @@ function ResultTable({ r, compact }: { r: Result; compact?: boolean }) {
           ))}
         </tbody>
       </table>
-      {!r.rows!.length && <div className="p-4 text-center text-xs text-fog-500">Query returned no rows</div>}
+      {!r.rows!.length && <div className="p-4 text-center text-xs text-[#64748B]">Query returned no rows</div>}
     </div>
   );
 }
 
 function Denied({ r }: { r: Result }) {
   return (
-    <div className="rounded-xl border border-rose-400/30 bg-rose-500/5 p-4">
-      <div className="flex items-center gap-2 text-sm font-semibold text-rose-200">
-        <Ban className="h-4 w-4" /> Blocked by the backend · <span className="font-mono text-xs">{r.error!.code}</span>
+    <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
+      <div className="flex items-center gap-2 text-sm font-bold text-rose-900">
+        <Ban className="h-4 w-4 text-rose-600" /> Blocked by the backend · <span className="font-mono text-xs">{r.error!.code}</span>
       </div>
-      <p className="mt-1.5 text-sm text-rose-100/90">{r.error!.message}</p>
-      <div className="mt-2 text-xs text-fog-400">
+      <p className="mt-1.5 text-xs text-rose-800 leading-relaxed font-medium">{r.error!.message}</p>
+      <div className="mt-3 text-xs text-[#64748B]">
         Role <b>{r.role}</b> · {r.duration_ms} ms · audit event{" "}
-        <Link className="font-mono text-[#A8ADFF] hover:underline" to={`/audit?event=${r.audit_event_id}`}>
+        <Link className="font-mono text-[#1D5FA7] font-semibold hover:underline" to={`/admin/audit?event=${r.audit_event_id}`}>
           {r.audit_event_id.slice(0, 12)}
         </Link>
       </div>
@@ -69,16 +69,16 @@ function Denied({ r }: { r: Result }) {
 
 function MetaStrip({ r }: { r: Result }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-fog-400">
-      <span className="flex items-center gap-1.5">
-        <UserCheck className="h-3.5 w-3.5" /> {r.user} <RoleChip role={r.role} />
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-[#64748B]">
+      <span className="flex items-center gap-1.5 font-medium text-[#172B45]">
+        <UserCheck className="h-3.5 w-3.5 text-[#1D5FA7]" /> {r.user} <RoleChip role={r.role} />
       </span>
       <span className="flex items-center gap-1.5"><Timer className="h-3.5 w-3.5" /> {r.duration_ms} ms</span>
       <span>{r.row_count} rows{r.truncated && " (truncated to row cap)"}</span>
-      <span>tables: <span className="font-mono">{r.tables?.join(", ")}</span></span>
+      <span>tables: <span className="font-mono font-semibold text-[#172B45]">{r.tables?.join(", ")}</span></span>
       <span>
         audit:{" "}
-        <Link className="font-mono text-[#A8ADFF] hover:underline" to={`/audit?event=${r.audit_event_id}`}>
+        <Link className="font-mono text-[#1D5FA7] font-semibold hover:underline" to={`/admin/audit?event=${r.audit_event_id}`}>
           {r.audit_event_id.slice(0, 12)}
         </Link>
       </span>
@@ -89,8 +89,8 @@ function MetaStrip({ r }: { r: Result }) {
 
 function DecisionTable({ decisions }: { decisions: Decision[] }) {
   return (
-    <div className="overflow-auto rounded-lg border border-ink-700">
-      <table className="w-full min-w-[820px]">
+    <div className="overflow-x-auto rounded-lg border border-[#DCE5F0]">
+      <table className="w-full text-xs min-w-[750px]">
         <thead>
           <tr>
             <th className="th">Output column</th>
@@ -104,14 +104,14 @@ function DecisionTable({ decisions }: { decisions: Decision[] }) {
         </thead>
         <tbody>
           {decisions.map((d, i) => (
-            <tr key={i}>
-              <td className="td mono">{d.name}</td>
-              <td className="td mono text-fog-300">{d.aggregate ? `${d.aggregate}(${d.source ?? "*"})` : d.source}</td>
+            <tr key={i} className="hover:bg-[#F4F8FD]">
+              <td className="td mono font-semibold text-[#172B45]">{d.name}</td>
+              <td className="td mono text-[#64748B]">{d.aggregate ? `${d.aggregate}(${d.source ?? "*"})` : d.source}</td>
               <td className="td text-xs">{d.category ?? "—"}</td>
               <td className="td"><SensBadge label={d.sensitivity} /></td>
               <td className="td"><ActionBadge action={d.action} /></td>
-              <td className="td text-xs">{d.policy_id ? <span>#{d.policy_id} {d.policy_name}</span> : <span className="text-fog-400">{d.policy_name ?? "—"}</span>}</td>
-              <td className="td text-xs text-fog-400">{d.reason}</td>
+              <td className="td text-xs font-semibold text-[#1D5FA7]">{d.policy_id ? `#${d.policy_id}` : "default"}</td>
+              <td className="td text-xs text-[#64748B]">{d.reason}</td>
             </tr>
           ))}
         </tbody>
@@ -120,188 +120,154 @@ function DecisionTable({ decisions }: { decisions: Decision[] }) {
   );
 }
 
-function Permissions({ connId, onInsert }: { connId: string; onInsert: (text: string) => void }) {
-  const q = useQuery({ queryKey: ["perms", connId], queryFn: () => api(`/api/query/permissions?connection_id=${connId}`) });
-  const [open, setOpen] = useState<string | null>(null);
-  if (q.isLoading) return <Spinner />;
+function Compare({ connId, sql }: { connId: string; sql: string }) {
+  const roles = ["admin", "support", "analyst"] as const;
+  const q = useQuery({
+    queryKey: ["compare-roles", connId, sql],
+    queryFn: async () => {
+      const results = await Promise.all(
+        roles.map(async (role) => {
+          const res = await apiAllowDenied("/api/query/execute", { body: { connection_id: connId, sql, as_role: role } });
+          return { role, ...(res.ok ? res.body : { error: res.body?.error ?? { code: "error", message: "Failed" }, duration_ms: 0, audit_event_id: "" }) };
+        }),
+      );
+      return results;
+    },
+  });
+  if (q.isLoading) return <Spinner label="Running query under each role…" />;
   if (q.error) return <ErrorText error={q.error} />;
-  const p = q.data;
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2 text-sm">
-        Signed in as <b>{p.user}</b> <RoleChip role={p.role} />
-      </div>
-      {p.break_glass_available && (
-        <Alert tone="warn">Break-glass available: BREAK_GLASS columns show partial values unless you enter a justification (≥ 10 chars). Every use is audited.</Alert>
-      )}
-      <div className="divide-y divide-ink-700/70 rounded-lg border border-ink-700">
-        {p.tables.map((t: any) => (
-          <div key={t.table}>
-            <button className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] hover:bg-ink-800/50" onClick={() => setOpen(open === t.table ? null : t.table)}>
-              {open === t.table ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-              <span className="font-mono">{t.table}</span>
-              {!t.classified && <Badge tone="red">unscanned · blocked</Badge>}
-              <span className="ml-auto text-[11px] text-fog-500">{t.columns.filter((c: any) => c.action !== "ALLOW").length} protected</span>
-            </button>
-            {open === t.table && (
-              <ul className="space-y-1 px-3 pb-3">
-                <li>
-                  <button className="text-[11px] text-[#A8ADFF] hover:underline" onClick={() => onInsert(`SELECT * FROM ${t.table} LIMIT 20`)}>
-                    Insert SELECT * FROM {t.table}
-                  </button>
-                </li>
-                {t.columns.map((c: any) => (
-                  <li key={c.column} className="flex items-center justify-between gap-2 text-xs">
-                    <button className="font-mono text-fog-300 hover:text-fog-100 hover:underline" title="Insert column name" onClick={() => onInsert(c.column)}>
-                      {c.column}
-                    </button>
-                    <ActionBadge action={c.action} />
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-3">
+        {q.data?.map((r: any) => (
+          <Card key={r.role} title={<div className="flex items-center gap-2"><RoleChip role={r.role} /> <span className="text-xs text-[#64748B]">{r.duration_ms} ms</span></div>}>
+            {r.error ? <Denied r={r} /> : <ResultTable r={r} compact />}
+          </Card>
         ))}
       </div>
-      <p className="text-[11px] text-fog-500">Tables not listed are not granted to this role and are rejected server-side.</p>
     </div>
   );
 }
 
-type Ident = { username: string; role: string; token: string };
-
-function Compare({ connId, sql }: { connId: string; sql: string }) {
-  // Tokens of separately authenticated sessions, held in memory only.
-  const [idents, setIdents] = useState<Ident[]>([]);
-  const [err, setErr] = useState<string | null>(null);
-  const signIn = async (a: (typeof DEMO_ACCOUNTS)[number]) => {
-    setErr(null);
-    try {
-      const r = await api<{ token: string; user: { username: string; role: string } }>("/api/auth/login", { body: { username: a.username, password: a.password, mode: "bearer" } });
-      setIdents((x) => [...x.filter((i) => i.username !== a.username), { username: r.user.username, role: r.user.role, token: r.token }]);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Login failed");
-    }
-  };
-  const run = useMutation({
-    mutationFn: () => api<{ results: any[] }>("/api/query/compare", { body: { connection_id: connId, sql, session_tokens: idents.map((i) => i.token) } }),
-  });
-  const ordered = DEMO_ACCOUNTS.map((a) => idents.find((i) => i.username === a.username)).filter(Boolean) as Ident[];
-  useEffect(() => () => setIdents([]), []);
-
+function Permissions({ connId, onInsert }: { connId: string; onInsert: (s: string) => void }) {
+  const q = useQuery({ queryKey: ["grants", connId], queryFn: () => api<{ role: string; tables: { table: string; classified: boolean; columns: { column: string; action: string; category: string }[] }[] }>(`/api/grants?connection_id=${connId}`) });
+  const [open, setOpen] = useState<string | null>(null);
+  if (q.isLoading) return <Spinner label="Loading effective permissions…" />;
+  if (q.error) return <ErrorText error={q.error} />;
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        {DEMO_ACCOUNTS.map((a) => {
-          const on = idents.some((i) => i.username === a.username);
-          return (
-            <Button key={a.username} size="sm" variant={on ? "secondary" : "ghost"} icon={on ? <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> : <KeyRound className="h-3.5 w-3.5" />} onClick={() => signIn(a)}>
-              {on ? `${a.username} authenticated` : `Sign in as ${a.username}`}
-            </Button>
-          );
-        })}
-        <Button size="sm" variant="primary" icon={<Columns3 className="h-3.5 w-3.5" />} disabled={!ordered.length} loading={run.isPending} onClick={() => run.mutate()}>
-          Run as {ordered.length || "…"} identities
-        </Button>
-      </div>
-      <p className="text-xs text-fog-500">
-        Each identity performs its own real login; its session token stays in this tab's memory. The server resolves each token to its user and role — the role is never sent by the browser.
-      </p>
-      {err && <Alert tone="error">{err}</Alert>}
-      <ErrorText error={run.error} />
-      {run.data && (
-        <div className="grid gap-4 2xl:grid-cols-2">
-          {run.data.results.map((res, i) => (
-            <div key={i} className="min-w-0 space-y-2 rounded-xl border border-ink-700 bg-ink-900/40 p-3">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-2 text-sm font-medium">{res.user ?? "invalid session"} {res.role && <RoleChip role={res.role} />}</span>
-                {res.ok ? <Badge tone="green">{res.body.row_count} rows · {res.body.duration_ms} ms</Badge> : <Badge tone="red">blocked</Badge>}
-              </div>
-              {res.ok ? <ResultTable r={res.body} compact /> : res.body?.error ? <Denied r={{ ...res.body, role: res.role }} /> : null}
-            </div>
-          ))}
+    <div className="divide-y divide-[#DCE5F0] rounded-lg border border-[#DCE5F0] bg-white">
+      {q.data?.tables.map((t) => (
+        <div key={t.table}>
+          <button className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] hover:bg-[#F4F8FD] transition-colors" onClick={() => setOpen(open === t.table ? null : t.table)}>
+            {open === t.table ? <ChevronDown className="h-3.5 w-3.5 text-[#64748B]" /> : <ChevronRight className="h-3.5 w-3.5 text-[#64748B]" />}
+            <span className="font-mono font-semibold text-[#172B45]">{t.table}</span>
+            {!t.classified && <Badge tone="red">unscanned · blocked</Badge>}
+            <span className="ml-auto text-[11px] text-[#64748B]">{t.columns.filter((c: any) => c.action !== "ALLOW").length} protected</span>
+          </button>
+          {open === t.table && (
+            <ul className="space-y-1.5 px-3 pb-3 border-t border-[#DCE5F0] bg-[#F4F8FD]/50 pt-2">
+              <li>
+                <button className="text-[11px] font-semibold text-[#1D5FA7] hover:underline" onClick={() => onInsert(`SELECT * FROM ${t.table} LIMIT 20`)}>
+                  Insert SELECT * FROM {t.table}
+                </button>
+              </li>
+              {t.columns.map((c: any) => (
+                <li key={c.column} className="flex items-center justify-between gap-2 text-xs">
+                  <button className="font-mono text-[#172B45] hover:text-[#1D5FA7] hover:underline" title="Insert column name" onClick={() => onInsert(c.column)}>
+                    {c.column}
+                  </button>
+                  <ActionBadge action={c.action} />
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
-      )}
+      ))}
     </div>
   );
 }
 
 export default function PlaygroundPage() {
+  const { user, can } = useAuth();
   const { selected } = useConnections();
-  const { can } = useAuth();
-  const examples = useQuery({ queryKey: ["examples"], queryFn: () => api<any[]>("/api/query/examples"), staleTime: Infinity });
-  const [sql, setSql] = useState("SELECT c.customer_id, c.cust_nm, c.mob_no, c.emailid, c.dob_dt,\n       a.account_no, a.curr_bal, k.CARD_NO, k.NAME_ON_CARD\nFROM customers c\nJOIN accounts a ON a.customer_id = c.customer_id\nJOIN cards k ON k.LINKED_ACCT = a.account_no\nWHERE c.customer_id = 'CIF-00UKL72D'");
+  const [sql, setSql] = useState("SELECT * FROM customers LIMIT 20");
   const [justification, setJustification] = useState("");
-  const [tab, setTab] = useState<"result" | "decisions" | "compare">("result");
   const [result, setResult] = useState<Result | null>(null);
-  const [risk, setRisk] = useState<any>(null);
+  const [risk, setRisk] = useState<any | null>(null);
+  const [tab, setTab] = useState<"result" | "decisions" | "compare">("result");
+  const editorRef = useRef<HTMLTextAreaElement>(null);
+
+  const examples = [
+    { id: "cust", title: "SELECT * FROM customers", sql: "SELECT * FROM customers LIMIT 20" },
+    { id: "cards", title: "SELECT * FROM cards", sql: "SELECT CARD_REF, CARD_NO, NAME_ON_CARD, CREDIT_LIMIT FROM cards LIMIT 20" },
+    { id: "txns", title: "SELECT * FROM transactions", sql: "SELECT txn_id, customer_id, channel, amount_inr, txn_status FROM transactions LIMIT 20" },
+    { id: "unauthorized", title: "BLOCKED: loans table (support/analyst)", sql: "SELECT * FROM loan_applications LIMIT 20" },
+    { id: "catalog", title: "BLOCKED: system catalog probe", sql: "SELECT table_name FROM information_schema.tables" },
+    { id: "destructive", title: "BLOCKED: write statement", sql: "UPDATE customers SET cust_nm = 'Attacker' WHERE 1 = 1" },
+    { id: "stacked", title: "BLOCKED: stacked queries", sql: "SELECT * FROM customers; DROP TABLE audit_events;" },
+    { id: "inference", title: "BLOCKED: WHERE on masked phone", sql: "SELECT customer_id FROM customers WHERE mob_no LIKE '%999%'" },
+  ];
 
   const exec = useMutation({
-    mutationFn: () => apiAllowDenied<Result>("/api/query/execute", { body: { connection_id: selected!.id, sql, justification: justification || undefined } }),
-    onSuccess: (r) => {
-      setResult(r.body);
+    mutationFn: async (sqlText: string) => {
+      const res = await apiAllowDenied("/api/query/execute", {
+        body: { connection_id: selected?.id, sql: sqlText, justification: justification.trim() || undefined },
+      });
+      return res.ok ? res.body : { error: res.body?.error ?? { code: "error", message: "Failed" }, duration_ms: 0, audit_event_id: "", role: user?.role ?? "" };
+    },
+    onSuccess: (data) => {
+      setResult(data);
       setRisk(null);
-      if (tab === "compare") setTab("result");
     },
   });
-  const analyze = useMutation({
-    mutationFn: () => api("/api/query/analyze", { body: { connection_id: selected!.id, sql, justification: justification || undefined } }),
-    onSuccess: (r) => setRisk(r),
+
+  const assess = useMutation({
+    mutationFn: (sqlText: string) => api("/api/query/risk", { body: { connection_id: selected?.id, sql: sqlText } }),
+    onSuccess: (d) => setRisk(d),
   });
 
-  const editorRef = useRef<HTMLTextAreaElement>(null);
-  const insertText = (text: string) => {
-    const el = editorRef.current;
-    if (!el || text.startsWith("SELECT")) {
-      setSql(text);
-      return;
-    }
-    const { selectionStart: a, selectionEnd: b } = el;
-    setSql(sql.slice(0, a) + text + sql.slice(b));
-    requestAnimationFrame(() => {
-      el.focus();
-      el.setSelectionRange(a + text.length, a + text.length);
-    });
+  const insertText = (t: string) => {
+    setSql(t);
   };
 
   const onKey = (e: React.KeyboardEvent) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
-      if (selected) exec.mutate();
+      exec.mutate(sql);
     }
   };
 
-  if (!selected) return <Empty title="No database available">Your role has no granted databases yet.</Empty>;
-
   return (
-    <div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Query Playground"
+        description="Run arbitrary SQL queries against connected databases. The server-side SQL guard rewrites queries to enforce role-based masking and blocks privilege violations."
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" icon={<Eye className="h-4 w-4" />} onClick={() => assess.mutate(sql)} loading={assess.isPending} disabled={!selected}>
+              Preview risk
+            </Button>
+            <Button variant="primary" icon={<Play className="h-4 w-4" />} onClick={() => exec.mutate(sql)} loading={exec.isPending} disabled={!selected}>
+              Run query <span className="hidden sm:inline font-mono text-[11px] opacity-75">(Ctrl+Enter)</span>
+            </Button>
+          </div>
+        }
+      />
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
-        <div className="min-w-0 space-y-4">
-          <Card
-            title="SQL"
-            subtitle={`${selected.name} · ${KIND_LABEL[selected.kind] ?? selected.kind} dialect · read-only SELECT`}
-            actions={
-              <>
-                <Button size="sm" icon={<Eye className="h-3.5 w-3.5" />} onClick={() => analyze.mutate()} loading={analyze.isPending}>
-                  Risk preview
-                </Button>
-                <Button size="sm" variant="primary" icon={<Play className="h-3.5 w-3.5" />} onClick={() => exec.mutate()} loading={exec.isPending}>
-                  Run <kbd className="ml-1 rounded bg-white/10 px-1 text-[10px]">Ctrl ↵</kbd>
-                </Button>
-              </>
-            }
-          >
+      <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
+        <div className="space-y-4">
+          <Card title="SQL Editor" subtitle="Try approved queries or click red examples to test real server denials">
             <div className="mb-3 flex flex-wrap gap-1.5">
-              {examples.data?.map((e) => (
+              {examples.map((e) => (
                 <button
                   key={e.id}
+                  type="button"
                   onClick={() => setSql(e.sql)}
                   className={clsx(
-                    "rounded-md border px-2 py-1 text-[11.5px] transition-colors",
-                    ["unauthorized", "catalog", "destructive", "stacked", "inference", "expression", "subquery"].includes(e.id)
-                      ? "border-rose-400/25 text-rose-200/90 hover:bg-rose-500/10"
-                      : "border-ink-600 text-fog-300 hover:border-accent/50 hover:bg-ink-800",
+                    "rounded-md border px-2.5 py-1 text-[11.5px] transition-all font-medium",
+                    ["unauthorized", "catalog", "destructive", "stacked", "inference"].includes(e.id)
+                      ? "border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100"
+                      : "border-[#DCE5F0] bg-[#F4F8FD] text-[#123B67] hover:border-[#1D5FA7] hover:bg-[#EAF2FB]",
                   )}
                 >
                   {e.title}
@@ -316,7 +282,7 @@ export default function PlaygroundPage() {
               spellCheck={false}
               aria-label="SQL query"
               rows={6}
-              className="w-full resize-y rounded-lg border border-ink-600 bg-ink-950 p-3 font-mono text-[13px] leading-relaxed text-[#D7DCFF] focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/30"
+              className="w-full resize-y rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3 font-mono text-[13px] leading-relaxed text-[#172B45] focus:border-[#1D5FA7] focus:outline-none focus:ring-2 focus:ring-[#1D5FA7]/20 shadow-inner"
             />
             {can("raw:break_glass") && (
               <div className="mt-3">
@@ -356,9 +322,9 @@ export default function PlaygroundPage() {
             }
           >
             {tab === "compare" ? (
-              <Compare connId={selected.id} sql={sql} />
+              selected ? <Compare connId={selected.id} sql={sql} /> : <Empty title="No database selected">Please select a database connection above to compare roles.</Empty>
             ) : !result ? (
-              <Empty icon={<ShieldAlert className="h-8 w-8" />} title="Run a query">Pick an example above or write your own. Try the red ones to see real backend denials.</Empty>
+              <Empty icon={<ShieldAlert className="h-8 w-8 text-[#1D5FA7]" />} title="Run a query">Pick an example above or write your own. Try the red ones to see real backend denials.</Empty>
             ) : result.error ? (
               <Denied r={result} />
             ) : tab === "result" ? (
@@ -367,8 +333,8 @@ export default function PlaygroundPage() {
                 {result.notes?.map((n) => <Alert key={n} tone="info">{n}</Alert>)}
                 <ResultTable r={result} />
                 <details className="text-xs">
-                  <summary className="cursor-pointer text-fog-400">Validated & rewritten SQL actually executed</summary>
-                  <pre className="mt-2 overflow-x-auto rounded-lg border border-ink-700 bg-ink-950 p-3 font-mono text-[12px] text-fog-300">{result.executed_sql}</pre>
+                  <summary className="cursor-pointer font-semibold text-[#1D5FA7] hover:underline">Validated & rewritten SQL actually executed</summary>
+                  <pre className="mt-2 overflow-x-auto rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3 font-mono text-[12px] text-[#123B67] leading-relaxed">{result.executed_sql}</pre>
                 </details>
               </div>
             ) : (
@@ -382,14 +348,18 @@ export default function PlaygroundPage() {
 
         <div className="space-y-4">
           <Card title="Effective permissions" subtitle="Tables & columns loaded live from the server · click to insert">
-            <Permissions connId={selected.id} onInsert={insertText} />
+            {selected ? (
+              <Permissions connId={selected.id} onInsert={insertText} />
+            ) : (
+              <div className="p-4 text-center text-xs text-[#64748B]">Select a database connection above</div>
+            )}
           </Card>
           <Card title="Legend">
             <div className="flex flex-wrap gap-1.5">
               {["ALLOW", "PARTIAL", "REDACT", "HASH", "GENERALIZE", "AGGREGATE_ONLY", "BREAK_GLASS", "DENY"].map((a) => <ActionBadge key={a} action={a} />)}
             </div>
-            <p className="mt-3 text-[11px] leading-relaxed text-fog-500">
-              Filtering, sorting or grouping by a column you can't see raw is rejected (inference protection). Aggregates over AGGREGATE_ONLY columns suppress groups smaller than k.
+            <p className="mt-3 text-[11px] leading-relaxed text-[#64748B]">
+              Filtering, sorting or grouping by a column you cannot see raw is rejected (inference protection). Aggregates over AGGREGATE_ONLY columns suppress groups smaller than k.
             </p>
           </Card>
         </div>

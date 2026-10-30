@@ -5,7 +5,6 @@ import {
   Database,
   FileSpreadsheet,
   Filter,
-  ShieldCheck,
   TrendingUp,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -31,12 +30,12 @@ export default function AnalystOverview() {
       });
       if (res.ok && res.body?.rows?.[0]) {
         return {
-          totalTxns: Number(res.body.rows[0][0]) || 100000,
-          totalVol: Number(res.body.rows[0][1]) || 387000000,
-          avgAmt: Number(res.body.rows[0][2]) || 3870,
+          totalTxns: Number(res.body.rows[0][0]) || 0,
+          totalVol: Number(res.body.rows[0][1]) || 0,
+          avgAmt: Number(res.body.rows[0][2]) || 0,
         };
       }
-      return { totalTxns: 100000, totalVol: 387452100, avgAmt: 3874.52 };
+      return null;
     },
     enabled: !!selected?.id,
   });
@@ -67,23 +66,17 @@ export default function AnalystOverview() {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-cyan/30 bg-gradient-to-r from-cyan/10 via-ink-900/40 to-ink-900/80 p-6 backdrop-blur md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 rounded-xl border border-[#DCE5F0] bg-white p-4 sm:p-6 shadow-sm md:flex-row md:items-center md:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="rounded-md border border-cyan/40 bg-cyan/10 px-2 py-0.5 text-xs font-semibold uppercase text-cyan">
-              Privacy-Preserving Analytics
-            </span>
-            <span className="text-xs text-fog-400">· Saffron Bank Ltd</span>
-          </div>
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-fog-100">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#172B45]">
             Welcome, {user?.display_name || "Data Analyst"}
           </h1>
-          <p className="mt-1 text-sm text-fog-300">
+          <p className="mt-1 text-xs sm:text-sm text-[#64748B]">
             Aggregated intelligence & transactional insights with server-side k-anonymity guarantees (k ≥ 5).
           </p>
         </div>
 
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 flex-wrap items-center gap-3">
           <Link to="/analyst/analytics">
             <Button variant="primary" icon={<BarChart3 className="h-4 w-4" />}>
               Explore Charts
@@ -97,21 +90,11 @@ export default function AnalystOverview() {
         </div>
       </div>
 
-      {/* Differential Privacy Notice */}
-      <div className="rounded-xl border border-ink-700 bg-ink-900/60 p-4">
-        <div className="flex items-start gap-3">
-          <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-cyan" />
-          <div className="text-xs leading-relaxed text-fog-300">
-            <strong className="font-semibold text-fog-100">Differential Privacy & k-Anonymity (k ≥ 5):</strong> All analytics queries are rewritten and verified on the server. Groups with fewer than 5 records are automatically suppressed. Individual financial balances and amounts are strictly <span className="text-amber-300">AGGREGATE-ONLY</span>. Customer names and phone numbers are <span className="text-rose-300">REDACTED</span>, and card identifiers use <span className="text-cyan">KEYED HMAC TOKENS</span>.
-          </div>
-        </div>
-      </div>
-
       {/* Approved Analytics Metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         <Stat
           label="Total Transactions Analyzed"
-          value={statsQ.isLoading ? "…" : statsQ.data?.totalTxns.toLocaleString() ?? "100,000"}
+          value={statsQ.isLoading ? "…" : statsQ.data?.totalTxns != null ? statsQ.data.totalTxns.toLocaleString() : "—"}
           hint="Saffron Bank core ledger"
           icon={<Database className="h-4 w-4" />}
           tone="cyan"
@@ -121,7 +104,9 @@ export default function AnalystOverview() {
           value={
             statsQ.isLoading
               ? "…"
-              : `₹${((statsQ.data?.totalVol || 0) / 10000000).toFixed(2)} Cr`
+              : statsQ.data?.totalVol != null
+                ? `₹${((statsQ.data.totalVol) / 10000000).toFixed(2)} Cr`
+                : "—"
           }
           hint="Aggregate sum across all channels"
           icon={<TrendingUp className="h-4 w-4" />}
@@ -132,7 +117,9 @@ export default function AnalystOverview() {
           value={
             statsQ.isLoading
               ? "…"
-              : `₹${Math.round(statsQ.data?.avgAmt || 0).toLocaleString()}`
+              : statsQ.data?.avgAmt != null
+                ? `₹${Math.round(statsQ.data.avgAmt).toLocaleString()}`
+                : "—"
           }
           hint="Calculated via server aggregate"
           icon={<BarChart3 className="h-4 w-4" />}
@@ -152,7 +139,7 @@ export default function AnalystOverview() {
         title="Payment Channel Distribution (Top Channels)"
         subtitle="Aggregate volume and transaction count grouped by payment rail"
         actions={
-          <Link to="/analyst/trends" className="text-xs text-cyan hover:underline">
+          <Link to="/analyst/trends" className="text-xs font-semibold text-[#1D5FA7] hover:underline">
             View Transaction Trends →
           </Link>
         }
@@ -160,27 +147,27 @@ export default function AnalystOverview() {
         {channelsQ.isLoading ? (
           <div className="py-8"><Spinner label="Computing channel aggregates..." /></div>
         ) : channelsQ.data && channelsQ.data.length > 0 ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
             {channelsQ.data.map((c: any) => (
               <div
                 key={c.channel}
-                className="rounded-lg border border-ink-700 bg-ink-900/40 p-4 transition-colors hover:border-cyan/40"
+                className="rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-4 transition-all hover:border-[#1D5FA7] hover:bg-[#EAF2FB]/50"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-fog-100">{c.channel}</span>
+                  <span className="font-semibold text-[#172B45]">{c.channel}</span>
                   <Badge tone="cyan">{c.count.toLocaleString()} txns</Badge>
                 </div>
-                <div className="mt-2 text-lg font-bold text-cyan">
+                <div className="mt-2 text-xl font-bold text-[#123B67]">
                   ₹{(c.volume / 100000).toFixed(2)} L
                 </div>
-                <div className="mt-1 text-[11px] text-fog-400">
+                <div className="mt-1 text-[11px] text-[#64748B]">
                   Avg: ₹{Math.round(c.volume / (c.count || 1)).toLocaleString()} / txn
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="py-6 text-center text-xs text-fog-400">No transaction data loaded.</div>
+          <div className="py-6 text-center text-xs text-[#64748B]">No transaction data loaded.</div>
         )}
       </Card>
 
@@ -188,45 +175,45 @@ export default function AnalystOverview() {
       <div className="grid gap-4 sm:grid-cols-3">
         <Link
           to="/analyst/analytics"
-          className="group rounded-xl border border-ink-700 bg-ink-900/60 p-5 transition-all hover:border-cyan/50 hover:bg-ink-800/50"
+          className="group rounded-xl border border-[#DCE5F0] bg-white p-5 transition-all hover:border-[#1D5FA7] hover:bg-[#F4F8FD] shadow-sm"
         >
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-cyan/10 text-cyan group-hover:bg-cyan/20">
+            <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#EAF2FB] text-[#1D5FA7] group-hover:bg-[#1D5FA7] group-hover:text-white transition-colors">
               <BarChart3 className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-fog-100">Visual Analytics</div>
-              <div className="text-xs text-fog-400">Channel breakdown & volume distributions</div>
+              <div className="text-sm font-semibold text-[#172B45]">Visual Analytics</div>
+              <div className="text-xs text-[#64748B]">Channel breakdown & volume distributions</div>
             </div>
           </div>
         </Link>
 
         <Link
           to="/analyst/explorer"
-          className="group rounded-xl border border-ink-700 bg-ink-900/60 p-5 transition-all hover:border-cyan/50 hover:bg-ink-800/50"
+          className="group rounded-xl border border-[#DCE5F0] bg-white p-5 transition-all hover:border-[#1D5FA7] hover:bg-[#F4F8FD] shadow-sm"
         >
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-accent/10 text-[#A8ADFF] group-hover:bg-accent/20">
+            <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#EAF2FB] text-[#1D5FA7] group-hover:bg-[#1D5FA7] group-hover:text-white transition-colors">
               <Filter className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-fog-100">Aggregate Explorer</div>
-              <div className="text-xs text-fog-400">Query builder with server-enforced k ≥ 5 checks</div>
+              <div className="text-sm font-semibold text-[#172B45]">Aggregate Explorer</div>
+              <div className="text-xs text-[#64748B]">Query builder with server-enforced k ≥ 5 checks</div>
             </div>
           </div>
         </Link>
 
         <Link
           to="/analyst/reports"
-          className="group rounded-xl border border-ink-700 bg-ink-900/60 p-5 transition-all hover:border-cyan/50 hover:bg-ink-800/50"
+          className="group rounded-xl border border-[#DCE5F0] bg-white p-5 transition-all hover:border-[#1D5FA7] hover:bg-[#F4F8FD] shadow-sm"
         >
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-lg bg-emerald-400/10 text-emerald-300 group-hover:bg-emerald-400/20">
+            <div className="grid h-10 w-10 place-items-center rounded-lg bg-[#EAF2FB] text-[#1D5FA7] group-hover:bg-[#1D5FA7] group-hover:text-white transition-colors">
               <FileSpreadsheet className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-fog-100">Privacy-Safe Reports</div>
-              <div className="text-xs text-fog-400">Screened aggregate reports with CSV export</div>
+              <div className="text-sm font-semibold text-[#172B45]">Privacy-Safe Reports</div>
+              <div className="text-xs text-[#64748B]">Screened aggregate reports with CSV export</div>
             </div>
           </div>
         </Link>

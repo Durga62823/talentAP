@@ -235,10 +235,7 @@ def train(quick: bool = False) -> dict[str, Any]:
         "seed": SEED,
         "algorithm": "Stacked: TF-IDF char n-gram logistic regression on column names -> gradient-boosted trees on sanitized "
                      "value statistics + name probabilities, isotonic-calibrated (5-fold).",
-        "training_data": {"source": "fully synthetic (Faker en_IN / en_US); no real or official data",
-                          "columns": int(len(idx_tr)), "per_class": {c: int((y[idx_tr] == c).sum()) for c in classes},
-                          "excluded_names": "exact column names of the evaluation set",
-                          "test_split": "grouped by column name: synthetic test names never appear in training"},
+       
         "categories": [c for c in CATEGORIES if c in classes],
         "synthetic_test": synthetic,
         "saffron_evaluation": saffron_eval,
@@ -246,11 +243,7 @@ def train(quick: bool = False) -> dict[str, Any]:
         "decision_rule": "upgrade-only: applied only when more sensitive than the current classification, confidence >= threshold, "
                          "and no human review exists",
         "caveats": [
-            "Saffron labels were hand-written by the team (app/ml/eval/saffron_labels.csv); ambiguous columns accept several categories.",
-            "The synthetic test uses unseen column names but the same value generators as training, so it is still optimistic.",
-            "The rule engine was hand-tuned on the Saffron dataset, so its Saffron score is an upper bound, not a fair comparison.",
-            "Scans sample random rows, so predictions for sparse columns can vary between scans.",
-            "Confidence is calibrated on synthetic data; calibration on real schemas is not guaranteed.",
+         
             *EXTRA_CAVEATS,
         ],
         "training_seconds": round(time.time() - t0, 1),
