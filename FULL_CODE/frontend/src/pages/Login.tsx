@@ -303,11 +303,6 @@ export default function LoginPage() {
 
               {/* Instant Demo Access Section */}
               <div className="border-t border-[#DCE5F0] pt-3.5 sm:pt-4 space-y-2.5 sm:space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-[#172B45]">
-                    <KeyRound className="h-3.5 w-3.5 text-[#1D5FA7]" /> Instant Demo Access
-                  </span>
-                </div>
 
                 <div className="flex gap-1 rounded-full border border-[#DCE5F0] bg-[#EEF3F9] p-1">
                   {[
@@ -320,8 +315,8 @@ export default function LoginPage() {
                       key={t.id}
                       onClick={() => setActiveRoleTab(activeRoleTab === t.id ? "all" : t.id)}
                       className={`flex-1 rounded-full py-1 text-[11px] font-medium transition-all ${activeRoleTab === t.id
-                          ? "bg-white text-[#123B67] shadow-sm font-bold"
-                          : "text-[#64748B] hover:text-[#172B45]"
+                        ? "bg-white text-[#123B67] shadow-sm font-bold"
+                        : "text-[#64748B] hover:text-[#172B45]"
                         }`}
                     >
                       {t.label}

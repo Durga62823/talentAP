@@ -41,14 +41,7 @@ export default function OverviewPage() {
         description="Comprehensive dashboard of database connections, automated PII classifications, and query protection activity."
         actions={
           <>
-            <Link to="/discovery">
-              <Button icon={<Radar className="h-4 w-4" />}>Run discovery</Button>
-            </Link>
-            <Link to="/playground">
-              <Button variant="primary" icon={<TerminalSquare className="h-4 w-4" />}>
-                Open query playground
-              </Button>
-            </Link>
+
           </>
         }
       />
