@@ -367,10 +367,6 @@ npm --prefix FULL_CODE/frontend run build
 - **Privacy Enforcement (Zero Raw PII Egress):** Raw customer records are **never transmitted** across the network. Only anonymized statistical summaries (string lengths, digit ratios, regex match percentages) and column names are sent.
 - **Upgrade-Only Arbitration:** LLM outputs are strictly constrained by an arbitration engine: models can only elevate sensitivity rank (e.g., `INTERNAL` -> `CONFIDENTIAL`), but are strictly barred from downgrading deterministic rule discoveries or overriding human administrator approvals.
 
-### 2. AI Coding Assistants Used
-- **Antigravity / Google DeepMind Agentic Assistant:** Used for codebase exploration, test orchestration, schema alignment, and architectural validation.
-- **Claude Code (Anthropic):** Used for synthetic training corpus generation scripts (`synth.py`) and regex entity pattern verification.
-- **Human Engineering & Verification:** All system architecture, SQL AST rewriting algorithms, security boundaries, cryptographic hash chains, and business logic were engineered, debugged, and verified by the development team.
 
 ---
 
