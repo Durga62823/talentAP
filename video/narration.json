@@ -1,0 +1,10 @@
+[
+  { "start": 0.6, "text": "Every bank holds millions of customer records. Names, phone numbers, Aadhaar, PAN, and card numbers." },
+  { "start": 9.3, "text": "Support agents, analysts, and auditors all need that data. And every query is a chance for it to leak." },
+  { "start": 17.6, "text": "Dream Guard puts one intelligent shield between your people and your databases." },
+  { "start": 23.0, "text": "It discovers sensitive data automatically, and masks it, by role." },
+  { "start": 28.7, "text": "Agents unmask a field only for a declared purpose, and a live ticket." },
+  { "start": 34.2, "text": "Everyone signs in through enterprise single sign on. And every access is sealed in a tamper evident audit chain." },
+  { "start": 42.6, "text": "Then, in one click, it exports signed compliance packs, for D P D P, R B I, and P C I." },
+  { "start": 51.9, "text": "Dream Guard. Protect the data. Keep the business moving." }
+]

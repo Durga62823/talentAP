@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Ban, Database, Fingerprint, Gauge, Radar, ShieldAlert, ShieldCheck, SlidersHorizontal } from "lucide-react";
+import { ArrowRight, Ban, Database, Fingerprint, Gauge, Radar, ShieldAlert, ShieldCheck, SlidersHorizontal, TerminalSquare, UploadCloud } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Badge, Button, Card, Empty, ErrorText, OutcomeBadge, PageHeader, Spinner, Stat } from "../components/ui";
@@ -41,7 +41,17 @@ export default function OverviewPage() {
         description="Comprehensive dashboard of database connections, automated PII classifications, and query protection activity."
         actions={
           <>
-
+            <Link to="/admin/uploads">
+              <Button icon={<UploadCloud className="h-4 w-4" />}>Upload files</Button>
+            </Link>
+            <Link to="/admin/discovery">
+              <Button icon={<Radar className="h-4 w-4" />}>Run discovery</Button>
+            </Link>
+            <Link to="/admin/playground">
+              <Button variant="primary" icon={<TerminalSquare className="h-4 w-4" />}>
+                Open query playground
+              </Button>
+            </Link>
           </>
         }
       />
@@ -51,12 +61,17 @@ export default function OverviewPage() {
           icon={<Radar className="h-8 w-8 text-[#1D5FA7]" />}
           title="No scans yet"
           action={
-            <Link to="/connections">
-              <Button variant="primary">Connect a database and scan</Button>
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link to="/admin/connections">
+                <Button variant="primary">Connect a database and scan</Button>
+              </Link>
+              <Link to="/admin/uploads">
+                <Button icon={<UploadCloud className="h-4 w-4" />}>Upload files</Button>
+              </Link>
+            </div>
           }
         >
-          Register a database connection and run a PII scan to populate the overview.
+          Register a database connection and run a PII scan, or upload files to populate the overview.
         </Empty>
       ) : (
         <>

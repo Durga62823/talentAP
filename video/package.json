@@ -1,0 +1,19 @@
+{
+  "name": "dreamguard-explainer-video",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Hand-drawn explainer video for DreamGuard, rendered frame by frame from scene.html",
+  "scripts": {
+    "voiceover": "powershell -NoProfile -ExecutionPolicy Bypass -File voiceover.ps1",
+    "render": "node build.mjs",
+    "preview": "node build.mjs --preview"
+  },
+  "dependencies": {
+    "@fontsource/kalam": "5.1.1",
+    "@fontsource/patrick-hand": "5.1.1",
+    "ffmpeg-static": "5.2.0",
+    "playwright-core": "1.49.1",
+    "roughjs": "4.6.6"
+  }
+}
