@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Ban, Database, Fingerprint, Gauge, Radar, ShieldAlert, ShieldCheck, SlidersHorizontal, TerminalSquare, UploadCloud } from "lucide-react";
+import { ArrowRight, Ban, Database, Fingerprint, Gauge, Radar, ShieldAlert, ShieldCheck, SlidersHorizontal, UploadCloud } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Badge, Button, Card, Empty, ErrorText, OutcomeBadge, PageHeader, Spinner, Stat } from "../components/ui";
@@ -44,14 +44,8 @@ export default function OverviewPage() {
             <Link to="/admin/uploads">
               <Button icon={<UploadCloud className="h-4 w-4" />}>Upload files</Button>
             </Link>
-            <Link to="/admin/discovery">
-              <Button icon={<Radar className="h-4 w-4" />}>Run discovery</Button>
-            </Link>
-            <Link to="/admin/playground">
-              <Button variant="primary" icon={<TerminalSquare className="h-4 w-4" />}>
-                Open query playground
-              </Button>
-            </Link>
+
+
           </>
         }
       />
@@ -84,9 +78,9 @@ export default function OverviewPage() {
             <Stat label="Queries blocked" value={o.queries_blocked} hint={`${o.privilege_violations} violations · ${o.failed_logins} failed`} icon={<Ban className="h-4 w-4" />} tone="red" />
           </div>
 
-          <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          <div className="mt-8 m-4 grid gap-4 lg:grid-cols-3">
             <Card title="Sensitivity distribution" subtitle="Effective labels after review">
-              <div className="h-56">
+              <div className="h-64">
                 <ResponsiveContainer>
                   <PieChart>
                     <Pie data={sensData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={85} paddingAngle={2} stroke="none">
