@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import select
@@ -7,9 +9,9 @@ from sqlalchemy.orm import Session
 
 from .. import audit, masking
 from ..metadb import Classification, Policy, PolicyVersion, Role, get_db, utcnow
-from ..policy import PolicyResolver, specificity
+from ..policy import PolicyResolver, is_conditional, specificity
 from ..scanner import CATEGORIES, LABELS
-from ..security import Principal, require
+from ..security import PURPOSES, AccessContext, Principal, normalise_purpose, normalise_ticket, require
 from ..seed import snapshot
 from .common import corr, iso
 
@@ -37,6 +39,25 @@ SYNTHETIC_SAMPLES = {
 }
 
 
+_HHMM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+_CLEARABLE = {"allowed_purposes", "time_window_start", "time_window_end"}
+
+
+def _check_abac(m: BaseModel) -> None:
+    """Shared ABAC validation. Empty list / empty string mean "no condition"."""
+    if m.allowed_purposes is not None:
+        unknown = [x for x in m.allowed_purposes if x not in PURPOSES]
+        if unknown:
+            raise ValueError(f"unknown purpose(s): {', '.join(unknown)}")
+        m.allowed_purposes = sorted(set(m.allowed_purposes))
+    for f in ("time_window_start", "time_window_end"):
+        v = getattr(m, f)
+        if v is not None and v != "" and not _HHMM.match(v):
+            raise ValueError(f"{f} must be HH:MM (24h, UTC)")
+    if m.time_window_start and m.time_window_end and m.time_window_start == m.time_window_end:
+        raise ValueError("time window start and end must differ")
+
+
 class PolicyIn(BaseModel):
     name: str = Field(min_length=3, max_length=128)
     role: str = Field(min_length=1, max_length=32)
@@ -50,11 +71,20 @@ class PolicyIn(BaseModel):
     priority: int = Field(default=0, ge=-100, le=100)
     active: bool = True
     description: str = Field(default="", max_length=255)
+    allowed_purposes: list[str] | None = Field(default=None, max_length=len(PURPOSES))
+    require_ticket_id: bool = False
+    time_window_start: str | None = None
+    time_window_end: str | None = None
 
     @model_validator(mode="after")
     def _validate(self):
         if self.action not in masking.ACTIONS:
             raise ValueError(f"unknown action {self.action}")
+        _check_abac(self)
+        if bool(self.time_window_start) != bool(self.time_window_end):
+            raise ValueError("a time window needs both start and end")
+        self.allowed_purposes = self.allowed_purposes or None
+        self.time_window_start, self.time_window_end = self.time_window_start or None, self.time_window_end or None
         if self.category and self.category not in CATEGORIES:
             raise ValueError("unknown category")
         if self.sensitivity and self.sensitivity not in LABELS:
@@ -75,6 +105,16 @@ class PolicyPatch(BaseModel):
     priority: int | None = Field(default=None, ge=-100, le=100)
     active: bool | None = None
     description: str | None = Field(default=None, max_length=255)
+    # ABAC: [] clears the purpose whitelist, "" clears a time window bound.
+    allowed_purposes: list[str] | None = Field(default=None, max_length=len(PURPOSES))
+    require_ticket_id: bool | None = None
+    time_window_start: str | None = None
+    time_window_end: str | None = None
+
+    @model_validator(mode="after")
+    def _validate(self):
+        _check_abac(self)
+        return self
 
 
 def policy_dict(p: Policy) -> dict:
@@ -84,6 +124,9 @@ def policy_dict(p: Policy) -> dict:
         "column_name": p.column_name, "category": p.category, "sensitivity": p.sensitivity,
         "priority": p.priority, "active": p.active, "version": p.version, "description": p.description,
         "specificity": specificity(p), "updated_by": p.updated_by, "updated_at": iso(p.updated_at),
+        "allowed_purposes": p.allowed_purposes or [], "require_ticket_id": bool(p.require_ticket_id),
+        "time_window_start": p.time_window_start, "time_window_end": p.time_window_end,
+        "conditional": is_conditional(p),
     }
 
 
@@ -94,7 +137,7 @@ def list_policies(p: Principal = Depends(require("policy:manage")), db: Session 
 
 @router.get("/actions")
 def actions(p: Principal = Depends(require("policy:manage"))):
-    return {"actions": masking.ACTIONS, "categories": CATEGORIES, "labels": LABELS}
+    return {"actions": masking.ACTIONS, "categories": CATEGORIES, "labels": LABELS, "purposes": PURPOSES}
 
 
 @router.post("", status_code=201)
@@ -123,7 +166,10 @@ def update_policy(pid: int, body: PolicyPatch, request: Request, p: Principal = 
     if not changes:
         raise HTTPException(status_code=400, detail="No changes supplied")
     for k, v in changes.items():
-        setattr(pol, k, v)
+        setattr(pol, k, None if k in _CLEARABLE and v in ([], "") else v)
+    if bool(pol.time_window_start) != bool(pol.time_window_end):
+        db.rollback()
+        raise HTTPException(status_code=400, detail="A time window needs both start and end")
     pol.version += 1
     pol.updated_by, pol.updated_at = p.username, utcnow()
     change_type = "activate" if changes == {"active": True} else "deactivate" if changes == {"active": False} else "update"
@@ -164,17 +210,26 @@ def preview(body: PreviewIn, p: Principal = Depends(require("policy:manage"))):
     return {"action": body.action, "category": body.category, "synthetic": body.values is None, "results": out}
 
 
+class SimContext(BaseModel):
+    purpose: str | None = None
+    ticket_id: str | None = Field(default=None, max_length=32)
+
+
 class SimulateIn(BaseModel):
     connection_id: str
     proposed: PolicyIn
+    # Evaluate both sides as if the request carried this purpose / ticket (ABAC dry run).
+    context: SimContext | None = None
 
 
 @router.post("/simulate")
 def simulate(body: SimulateIn, p: Principal = Depends(require("policy:manage")), db: Session = Depends(get_db)):
     """Compare current vs proposed decisions for one role without changing active policies."""
     role = body.proposed.role
-    current = PolicyResolver(db, role, body.connection_id)
-    proposed = PolicyResolver(db, role, body.connection_id)
+    sc = body.context or SimContext()
+    ctx = AccessContext(purpose=normalise_purpose(sc.purpose), ticket_id=normalise_ticket(sc.ticket_id))
+    current = PolicyResolver(db, role, body.connection_id, ctx)
+    proposed = PolicyResolver(db, role, body.connection_id, ctx)
     draft = Policy(id=10**9, **body.proposed.model_dump())
     proposed.policies = proposed.policies + [draft]
     changes = []
@@ -192,4 +247,5 @@ def simulate(body: SimulateIn, p: Principal = Depends(require("policy:manage")),
                     "proposed": masking.apply(b.action, sample, c.category) if b.action != "DENY" else "(denied)",
                 },
             })
-    return {"role": role, "affected_columns": len(changes), "changes": changes, "saved": False}
+    return {"role": role, "affected_columns": len(changes), "changes": changes, "saved": False,
+            "context": {"purpose": ctx.purpose, "ticket_id": ctx.ticket_id}}

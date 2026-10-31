@@ -6,6 +6,7 @@ import os
 import secrets
 from functools import lru_cache
 from pathlib import Path
+from typing import Callable
 
 from pydantic import BaseModel
 
@@ -87,19 +88,24 @@ def get_settings() -> Settings:
     return s
 
 
+def secret_file(file_name: str, create: Callable[[], bytes]) -> bytes:
+    """Read a server-side secret (key material) from data/secrets, creating it on first use."""
+    path = get_settings().secrets_dir / file_name
+    if not path.exists():
+        path.write_bytes(create())
+        try:
+            os.chmod(path, 0o600)
+        except OSError:
+            pass
+    return path.read_bytes()
+
+
 def _secret_from_env_or_file(env_name: str, file_name: str, nbytes: int = 32) -> bytes:
     """Read a hex secret from the environment, or create one in data/secrets on first use."""
     value = os.environ.get(env_name)
     if value:
         return bytes.fromhex(value)
-    path = get_settings().secrets_dir / file_name
-    if not path.exists():
-        path.write_text(secrets.token_hex(nbytes), encoding="utf-8")
-        try:
-            os.chmod(path, 0o600)
-        except OSError:
-            pass
-    return bytes.fromhex(path.read_text(encoding="utf-8").strip())
+    return bytes.fromhex(secret_file(file_name, lambda: secrets.token_hex(nbytes).encode()).decode().strip())
 
 
 @lru_cache

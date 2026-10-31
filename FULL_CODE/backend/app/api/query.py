@@ -89,7 +89,7 @@ def effective_permissions(connection_id: str, p: Principal = Depends(current_pri
     """The caller's effective table grants and per-column actions (no data values)."""
     conn = get_conn(db, connection_id)
     grants = list(db.scalars(select(TableGrant).where(TableGrant.connection_id == conn.id, TableGrant.role == p.role)))
-    resolver = PolicyResolver(db, p.role, conn.id)
+    resolver = PolicyResolver(db, p.role, conn.id, p.context)
     tables = []
     for g in sorted(grants, key=lambda g: g.table_name):
         cols = [c for c in resolver.classes.values() if c.table_name.lower() == g.table_name.lower()]

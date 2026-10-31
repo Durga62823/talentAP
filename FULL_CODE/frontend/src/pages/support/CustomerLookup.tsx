@@ -2,12 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, Eye, Search, User } from "lucide-react";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { MaskBadge, PurposeBanner, decisionOf } from "../../components/PurposeBinding";
 import { Alert, Badge, Button, Card, Spinner } from "../../components/ui";
 import { apiAllowDenied } from "../../lib/api";
 import { useConnections } from "../../lib/connections";
+import { purposeHeaders, usePurposeBinding } from "../../lib/purpose";
 
 export default function CustomerLookup() {
   const { selected } = useConnections();
+  const binding = usePurposeBinding();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryParam = searchParams.get("q") || "";
 
@@ -28,7 +31,7 @@ export default function CustomerLookup() {
   };
 
   const lookupQ = useQuery({
-    queryKey: ["customer-lookup", selected?.id, searchTerm],
+    queryKey: ["customer-lookup", selected?.id, searchTerm, binding.purpose, binding.ticketId],
     queryFn: async () => {
       if (!selected?.id || !searchTerm) return null;
 
@@ -40,6 +43,7 @@ export default function CustomerLookup() {
 
       const res = await apiAllowDenied("/api/query/execute", {
         body: { connection_id: selected.id, sql },
+        headers: purposeHeaders(binding),
       });
 
       return res;
@@ -60,6 +64,8 @@ export default function CustomerLookup() {
           Find customer accounts across Saffron Bank database. Permitted fields are delivered with role-approved partial masking.
         </p>
       </div>
+
+      <PurposeBanner results={[lookupQ.data?.ok ? lookupQ.data.body.access_context : null]} />
 
       {/* Search Input Card */}
       <Card title="Search Customers" subtitle="Search by full or partial Customer ID. Names and phones are masked, so they cannot be searched.">
@@ -136,15 +142,9 @@ export default function CustomerLookup() {
                 <thead className="border-b border-[#DCE5F0] bg-[#F4F8FD] text-[#172B45]">
                   <tr>
                     <th className="py-2.5 px-3 font-semibold">Customer ID</th>
-                    <th className="py-2.5 px-3 font-semibold">
-                      Customer Name <span className="text-[10px] text-[#1D5FA7]">(Masked)</span>
-                    </th>
-                    <th className="py-2.5 px-3 font-semibold">
-                      Mobile Number <span className="text-[10px] text-[#1D5FA7]">(Masked)</span>
-                    </th>
-                    <th className="py-2.5 px-3 font-semibold">
-                      Email Address <span className="text-[10px] text-[#1D5FA7]">(Masked)</span>
-                    </th>
+                    <th className="py-2.5 px-3 font-semibold">Customer Name</th>
+                    <th className="py-2.5 px-3 font-semibold">Mobile Number</th>
+                    <th className="py-2.5 px-3 font-semibold">Email Address</th>
                     <th className="py-2.5 px-3 font-semibold">Location</th>
                     <th className="py-2.5 px-3 font-semibold">Segment</th>
                     <th className="py-2.5 px-3 text-right font-semibold">Action</th>
@@ -160,15 +160,15 @@ export default function CustomerLookup() {
                         </td>
                         <td className="py-3 px-3">
                           <div className="font-semibold text-[#172B45]">{name}</div>
-                          <Badge tone="amber" className="mt-0.5 text-[10px]">Partially Masked</Badge>
+                          <MaskBadge d={decisionOf(lookupQ.data!.body, "cust_nm")} className="mt-0.5 text-[10px]" />
                         </td>
                         <td className="py-3 px-3 font-mono text-[#172B45]">
                           <div>{mob}</div>
-                          <Badge tone="amber" className="mt-0.5 text-[10px]">Partially Masked</Badge>
+                          <MaskBadge d={decisionOf(lookupQ.data!.body, "mob_no")} className="mt-0.5 text-[10px]" />
                         </td>
                         <td className="py-3 px-3 text-[#172B45]">
                           <div>{email}</div>
-                          <Badge tone="amber" className="mt-0.5 text-[10px]">Partially Masked</Badge>
+                          <MaskBadge d={decisionOf(lookupQ.data!.body, "emailid")} className="mt-0.5 text-[10px]" />
                         </td>
                         <td className="py-3 px-3 text-[#64748B]">
                           {city && state ? `${city}, ${state}` : city || state || "—"}

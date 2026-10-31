@@ -1,8 +1,92 @@
-import { ArrowRight, KeyRound, Lock, User } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, Building2, ChevronDown, KeyRound, Lock, User } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "../components/ui";
+import { API_BASE, api, type SsoProvider } from "../lib/api";
 import { DEMO_ACCOUNTS, getRoleHome, useAuth } from "../lib/auth";
+
+const SSO_ERRORS: Record<string, string> = {
+  account_disabled: "Your account has been deprovisioned by your directory administrator.",
+  no_role: "Your directory groups do not grant access to DreamGuard.",
+  state_missing: "The sign-in session expired or was started in another browser. Please try again.",
+  state_mismatch: "The sign-in response did not match this browser session and was rejected.",
+  unknown_provider: "That identity provider is not configured or is disabled.",
+};
+
+/** Full-page navigation: the IdP round trip must be a top-level redirect, never fetch(). */
+function startSso(idpId: string, loginHint?: string) {
+  const qs = loginHint ? `?${new URLSearchParams({ login_hint: loginHint })}` : "";
+  window.location.assign(`${API_BASE}/api/auth/sso/login/${encodeURIComponent(idpId)}${qs}`);
+}
+
+function EnterpriseSso({ disabled }: { disabled: boolean }) {
+  const [open, setOpen] = useState(false);
+  const providers = useQuery({ queryKey: ["sso-providers"], queryFn: () => api<SsoProvider[]>("/api/auth/sso/providers"), staleTime: 60_000 });
+  const list = providers.data ?? [];
+  return (
+    <div className="rounded-2xl border border-[#DCE5F0] bg-[#F8FAFD]">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left"
+      >
+        <span className="flex items-center gap-1.5 text-xs font-bold text-[#172B45]">
+          <Building2 className="h-3.5 w-3.5 text-[#1D5FA7]" /> Enterprise Single Sign-On (SSO)
+        </span>
+        <ChevronDown className={`h-4 w-4 text-[#64748B] transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="space-y-2.5 border-t border-[#DCE5F0] px-4 pb-3.5 pt-3">
+          {providers.isLoading && <p className="text-[11px] text-[#64748B]">Loading identity providers…</p>}
+          {!providers.isLoading && !list.length && <p className="text-[11px] text-[#64748B]">No identity provider is configured.</p>}
+          {list.map((p) => (
+            <div key={p.id} className="space-y-1.5">
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => startSso(p.id)}
+                className="flex w-full items-center justify-between rounded-full border border-[#1D5FA7]/60 bg-white px-4 py-2 text-xs font-semibold text-[#123B67] transition-all hover:border-[#1D5FA7] hover:bg-[#F4F8FD] disabled:opacity-50"
+              >
+                <span>Continue with {p.name}</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </button>
+              {p.personas && (
+                <>
+                  <p className="pl-2 pt-1 text-[10px] font-semibold uppercase tracking-wider text-[#64748B]">
+                    Simulated directory · one-click sign-in
+                  </p>
+                  <div className="grid gap-1.5 sm:grid-cols-2">
+                    {p.personas.map((u) => (
+                      <button
+                        type="button"
+                        key={u.login_hint}
+                        disabled={disabled}
+                        onClick={() => startSso(p.id, u.login_hint)}
+                        title={u.login_hint}
+                        className="flex min-w-0 items-center justify-between gap-2 rounded-full border border-[#DCE5F0] bg-white px-3 py-1.5 text-left transition-all hover:border-[#1D5FA7] hover:bg-[#F4F8FD] disabled:opacity-50"
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-[11px] font-bold text-[#172B45]">{u.name}</span>
+                          <span className="block truncate text-[9.5px] text-[#64748B]">{u.groups.join(", ") || "no mapped group"}</span>
+                        </span>
+                        <span className="shrink-0 rounded-full border border-[#1D5FA7]/40 px-2 py-0.5 text-[9px] font-bold uppercase text-[#1D5FA7]">{u.role}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+          <p className="pl-1 text-[10px] leading-relaxed text-[#64748B]">
+            OIDC authorization-code flow with PKCE. Your role comes from your directory groups and is re-synced at every sign-in.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const ROLE_OUTLINE: Record<string, string> = {
   admin: "border-[#1D5FA7] text-[#1D5FA7]",
@@ -19,6 +103,15 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [activeRoleTab, setActiveRoleTab] = useState<string>("all");
+
+  // The SSO callback redirects here with ?sso_error=<code> when a federated sign-in is refused.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("sso_error");
+    if (code) {
+      setError(`Single sign-on failed: ${SSO_ERRORS[code] ?? `the identity provider response was rejected (${code})`}`);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -205,6 +298,8 @@ export default function LoginPage() {
                   )}
                 </button>
               </form>
+
+              <EnterpriseSso disabled={busy} />
 
               {/* Instant Demo Access Section */}
               <div className="border-t border-[#DCE5F0] pt-3.5 sm:pt-4 space-y-2.5 sm:space-y-3">

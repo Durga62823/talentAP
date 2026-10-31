@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Download, Link2, ShieldCheck, ShieldX } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { ComplianceDossier } from "../components/ComplianceDossier";
 import { ActionBadge, Alert, Badge, Button, Card, Empty, ErrorText, Modal, OutcomeBadge, PageHeader, Spinner } from "../components/ui";
 import { api, download, fmtTime } from "../lib/api";
 
@@ -84,6 +85,7 @@ export default function AuditPage() {
           )}
         </div>
       )}
+      <ComplianceDossier onOpenEvent={(id) => setParams({ event: id })} />
       <Card>
         <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
           <select className="input text-xs" value={f.actor} onChange={set("actor")} aria-label="Actor"><option value="">All actors</option>{q.data?.facets.actors.map((a: string) => <option key={a}>{a}</option>)}</select>

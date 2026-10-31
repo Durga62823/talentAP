@@ -74,7 +74,7 @@ def build_plan(
 ) -> tuple[QueryPlan, Any]:
     settings = get_settings()
     adapter = get_adapter(conn)
-    resolver = PolicyResolver(db, principal.role, conn.id)
+    resolver = PolicyResolver(db, principal.role, conn.id, principal.context)
     grants = granted_tables(db, conn.id, principal.role)
     available = adapter.list_tables()
     can_bg = principal.can("raw:break_glass")
@@ -182,6 +182,7 @@ def run_query(
         f"{o.table}.{o.column}" for o in plan.outputs if o.decision and "break-glass justification recorded" in o.decision.reason
     ]
     decisions = [o.as_dict() for o in plan.outputs]
+    abac_cols = [f"{o.table}.{o.column}" for o in plan.outputs if o.decision and o.decision.abac_granted]
     ev = audit.record(
         db,
         principal,
@@ -197,12 +198,13 @@ def run_query(
         | {
             "row_count": len(masked_rows),
             "truncated": truncated,
-            "decisions": [{k: d[k] for k in ("name", "source", "action", "policy_id")} for d in decisions],
+            "decisions": [{k: d[k] for k in ("name", "source", "action", "policy_id", "aggregate")} for d in decisions],
             "predicate_columns": plan.predicate_columns,
             "break_glass": bool(break_glass_cols),
             "justification": (justification or "")[:300] if break_glass_cols else "",
             "min_group_enforced": plan.min_group_enforced,
             "cache_hit": cache_hit,
+            "abac_granted_columns": abac_cols,
         },
     )
     return QueryOutcome(
@@ -224,6 +226,12 @@ def run_query(
             "cache_hit": cache_hit,
             "audit_event_id": ev.id,
             "break_glass_columns": break_glass_cols,
+            "access_context": {
+                "purpose": principal.context.purpose,
+                "ticket_id": principal.context.ticket_id,
+                "rejected_attributes": list(principal.context.rejected),
+                "abac_granted_columns": abac_cols,
+            },
         },
     )
 

@@ -10,7 +10,16 @@ type Policy = {
   id: number; name: string; role: string; action: string; connection_id: string | null; schema_name: string | null; table_name: string | null;
   column_name: string | null; category: string | null; sensitivity: string | null; priority: number; active: boolean; version: number;
   description: string; specificity: number; updated_by: string | null; updated_at: string;
+  allowed_purposes: string[]; require_ticket_id: boolean; time_window_start: string | null; time_window_end: string | null; conditional: boolean;
 };
+
+function abacSummary(p: Pick<Policy, "allowed_purposes" | "require_ticket_id" | "time_window_start" | "time_window_end">) {
+  const parts = [];
+  if (p.allowed_purposes.length) parts.push(`purpose ${p.allowed_purposes.map((x) => x.toLowerCase().replace(/_/g, " ")).join(" / ")}`);
+  if (p.require_ticket_id) parts.push("ticket required");
+  if (p.time_window_start && p.time_window_end) parts.push(`${p.time_window_start}–${p.time_window_end} UTC`);
+  return parts.join(" · ");
+}
 
 function Scope({ p }: { p: Policy }) {
   const parts = [];
@@ -18,8 +27,52 @@ function Scope({ p }: { p: Policy }) {
   if (p.category) parts.push(<Badge key="c" tone="neutral">category {p.category}</Badge>);
   if (p.sensitivity) parts.push(<Badge key="s" tone="neutral">label {p.sensitivity}</Badge>);
   if (p.connection_id) parts.push(<Badge key="db" tone="indigo">one database</Badge>);
+  if (p.conditional) parts.push(<Badge key="abac" tone="violet" title="Applies only while these attributes hold; otherwise the next policy decides">ABAC · {abacSummary(p)}</Badge>);
   return <div className="flex flex-wrap items-center gap-1.5 text-xs">{parts}</div>;
 }
+
+function AbacFields({ meta, f, setF }: { meta: any; f: AbacState; setF: (f: AbacState) => void }) {
+  const purposes: Record<string, string> = meta.purposes ?? {};
+  const toggle = (p: string) =>
+    setF({ ...f, allowed_purposes: f.allowed_purposes.includes(p) ? f.allowed_purposes.filter((x) => x !== p) : [...f.allowed_purposes, p] });
+  return (
+    <div className="rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3.5">
+      <div className="text-xs font-semibold text-[#172B45]">Attribute-based conditions (ABAC)</div>
+      <p className="mt-0.5 text-[11px] text-[#64748B]">
+        Optional. When set, this policy only applies while every condition holds; otherwise the next matching policy decides, and the result is never less protective than this policy.
+      </p>
+      <div className="mt-2.5">
+        <label className="label">Purpose whitelist (none = any purpose)</label>
+        <div className="flex flex-wrap gap-1.5">
+          {Object.entries(purposes).map(([k, label]) => {
+            const on = f.allowed_purposes.includes(k);
+            return (
+              <button
+                type="button"
+                key={k}
+                aria-pressed={on}
+                onClick={() => toggle(k)}
+                className={`rounded-md border px-2 py-1 text-[11px] font-medium transition-all ${on ? "border-[#1D5FA7] bg-[#EAF2FB] text-[#123B67]" : "border-[#DCE5F0] bg-white text-[#64748B] hover:border-[#3478C8]"}`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+        <label className="flex items-center gap-2 text-xs font-medium text-[#172B45] sm:pt-5">
+          <input type="checkbox" checked={f.require_ticket_id} onChange={(e) => setF({ ...f, require_ticket_id: e.target.checked })} />
+          Require ticket ID
+        </label>
+        <div><label className="label">Window start (UTC)</label><input className="input" type="time" value={f.time_window_start} onChange={(e) => setF({ ...f, time_window_start: e.target.value })} /></div>
+        <div><label className="label">Window end (UTC)</label><input className="input" type="time" value={f.time_window_end} onChange={(e) => setF({ ...f, time_window_end: e.target.value })} /></div>
+      </div>
+    </div>
+  );
+}
+
+type AbacState = { allowed_purposes: string[]; require_ticket_id: boolean; time_window_start: string; time_window_end: string };
 
 function Preview({ meta }: { meta: any }) {
   const [category, setCategory] = useState("CREDIT_CARD");
@@ -64,12 +117,19 @@ function PolicyForm({ meta, onClose, initial }: { meta: any; onClose: () => void
     table_name: initial?.table_name ?? "", column_name: initial?.column_name ?? "", category: initial?.category ?? "", sensitivity: initial?.sensitivity ?? "",
     priority: initial?.priority ?? 0, description: initial?.description ?? "",
   });
-  const body = { ...f, priority: Number(f.priority), connection_id: f.connection_id || null, table_name: f.table_name || null, column_name: f.column_name || null, category: f.category || null, sensitivity: f.sensitivity || null };
+  const [abac, setAbac] = useState<AbacState>({
+    allowed_purposes: initial?.allowed_purposes ?? [], require_ticket_id: initial?.require_ticket_id ?? false,
+    time_window_start: initial?.time_window_start ?? "", time_window_end: initial?.time_window_end ?? "",
+  });
+  const body = { ...f, ...abac, priority: Number(f.priority), connection_id: f.connection_id || null, table_name: f.table_name || null, column_name: f.column_name || null, category: f.category || null, sensitivity: f.sensitivity || null };
   const save = useMutation({
-    mutationFn: () => (initial ? api(`/api/policies/${initial.id}`, { method: "PATCH", body: { name: f.name, action: f.action, priority: Number(f.priority), description: f.description } }) : api("/api/policies", { body })),
+    mutationFn: () => (initial ? api(`/api/policies/${initial.id}`, { method: "PATCH", body: { name: f.name, action: f.action, priority: Number(f.priority), description: f.description, ...abac } }) : api("/api/policies", { body })),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["policies"] }); qc.invalidateQueries({ queryKey: ["overview"] }); onClose(); },
   });
-  const sim = useMutation({ mutationFn: () => api("/api/policies/simulate", { body: { connection_id: selected?.id, proposed: body } }) });
+  // A conditional draft is simulated as if a request satisfied its conditions; otherwise it would never apply.
+  const simContext = abac.allowed_purposes.length || abac.require_ticket_id
+    ? { purpose: abac.allowed_purposes[0] ?? null, ticket_id: abac.require_ticket_id ? "SIM-1" : null } : undefined;
+  const sim = useMutation({ mutationFn: () => api("/api/policies/simulate", { body: { connection_id: selected?.id, proposed: body, context: simContext } }) });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
   const locked = !!initial;
   return (
@@ -92,10 +152,14 @@ function PolicyForm({ meta, onClose, initial }: { meta: any; onClose: () => void
         <div className="sm:col-span-2"><label className="label">Description</label><input className="input" value={f.description} onChange={set("description")} /></div>
       </div>
       <p className="text-[11px] text-[#64748B]">{meta.actions[f.action]}</p>
+      <AbacFields meta={meta} f={abac} setF={setAbac} />
       {!locked && (
         <div className="rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3.5">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-[#172B45]">Simulate against {selected?.name} without saving</span>
+            <span className="text-xs font-semibold text-[#172B45]">
+              Simulate against {selected?.name} without saving
+              {simContext && <span className="font-normal text-[#64748B]"> · as a request bound to {simContext.purpose ?? "any purpose"}{simContext.ticket_id ? " with a ticket" : ""}</span>}
+            </span>
             <Button size="sm" icon={<FlaskConical className="h-3.5 w-3.5" />} onClick={() => sim.mutate()} loading={sim.isPending}>Simulate</Button>
           </div>
           <ErrorText error={sim.error} />

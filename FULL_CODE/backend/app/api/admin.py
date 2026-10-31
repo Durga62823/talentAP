@@ -16,6 +16,7 @@ from ..metadb import (
     AuthSession,
     Classification,
     DbConnection,
+    IdentityProvider,
     IntegrityRun,
     Policy,
     Role,
@@ -48,8 +49,10 @@ class UserPatch(BaseModel):
     password: str | None = Field(default=None, min_length=10, max_length=128)
 
 
-def user_dict(u: User) -> dict:
-    return {"id": u.id, "username": u.username, "display_name": u.display_name, "role": u.role, "active": u.active, "created_at": iso(u.created_at)}
+def user_dict(u: User, idp_names: dict[str, str] | None = None) -> dict:
+    return {"id": u.id, "username": u.username, "display_name": u.display_name, "role": u.role, "active": u.active, "created_at": iso(u.created_at),
+            "federated": u.idp_id is not None, "idp_id": u.idp_id, "idp_name": (idp_names or {}).get(u.idp_id or ""),
+            "idp_linked": u.external_sub is not None}
 
 
 def _password_ok(pw: str) -> bool:
@@ -58,7 +61,8 @@ def _password_ok(pw: str) -> bool:
 
 @router.get("/users")
 def list_users(p: Principal = Depends(require("users:manage")), db: Session = Depends(get_db)):
-    return [user_dict(u) for u in db.scalars(select(User).order_by(User.username))]
+    idp_names = {i.id: i.name for i in db.scalars(select(IdentityProvider))}
+    return [user_dict(u, idp_names) for u in db.scalars(select(User).order_by(User.username))]
 
 
 @router.post("/users", status_code=201)
@@ -93,6 +97,8 @@ def update_user(uid: str, body: UserPatch, request: Request, p: Principal = Depe
         changes["active"] = (u.active, body.active)
         u.active = body.active
     if body.password:
+        if u.idp_id:
+            raise HTTPException(status_code=400, detail="Federated users authenticate at their identity provider; no local password can be set")
         if not _password_ok(body.password):
             raise HTTPException(status_code=400, detail="Password needs upper, lower case letters and a digit")
         u.password_hash = hash_password(body.password)

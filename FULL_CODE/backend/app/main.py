@@ -16,13 +16,14 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from . import metrics
-from .api import admin, audit_api, auth, databases, discovery, policies, query, uploads
+from .api import admin, audit_api, auth, compliance_reports, databases, discovery, policies, query, scim, sso, uploads
 from .config import ROOT_DIR, get_settings
 from .connectors import _cache as _adapters
 from .connectors import _cache_lock as _adapter_lock
 from .metadb import SessionLocal
 from .security import Principal, require
 from .seed import ensure_initialised
+from .sso import ensure_identity_providers
 from .uploads import purge_expired
 
 log = logging.getLogger("sentinelmask")
@@ -34,6 +35,7 @@ async def lifespan(_: FastAPI):
     db = SessionLocal()
     try:
         purge_expired(db)
+        ensure_identity_providers(db)  # metadata DBs created before SSO existed get the mock IdP too
     finally:
         db.close()
     yield
@@ -54,8 +56,10 @@ app.add_middleware(
     allow_origin_regex=os.environ.get("SENTINEL_CORS_ORIGIN_REGEX") or None,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE"],
-    allow_headers=["Content-Type", "Authorization", "X-Sentinel-CSRF", "X-Correlation-ID"],
-    expose_headers=["X-Correlation-ID", "Server-Timing"],
+    allow_headers=["Content-Type", "Authorization", "X-Sentinel-CSRF", "X-Correlation-ID",
+                   "X-DreamGuard-Purpose", "X-DreamGuard-Ticket-Id"],
+    expose_headers=["X-Correlation-ID", "Server-Timing", "X-Dossier-SHA256", "X-Dossier-Signature", "X-Audit-Event-Id",
+                    "Content-Disposition"],
 )
 # JSON payloads (classification lists, result sets) compress 5-10x; the free Render tier is
 # bandwidth-bound, so this is the cheapest latency win.
@@ -131,8 +135,11 @@ def get_metrics(_: Principal = Depends(require("audit:read"))):
     return snap
 
 
-for r in (auth.router, databases.router, discovery.router, policies.router, query.router, uploads.router, audit_api.router, admin.router):
+for r in (auth.router, sso.router, scim.router, databases.router, discovery.router, policies.router, query.router,
+          uploads.router, audit_api.router, compliance_reports.router, admin.router):
     app.include_router(r)
+# SCIM clients expect RFC 7644 error bodies, not the console's {"error": ...} shape.
+app.add_exception_handler(scim.ScimError, scim.scim_error_handler)
 
 
 # Serve the built frontend (frontend/dist) when present, so one process runs the demo.

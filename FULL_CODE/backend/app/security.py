@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import re
 import secrets
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
@@ -34,6 +35,19 @@ PERMISSIONS = {
 
 COOKIE_NAME = "sm_session"
 CSRF_HEADER = "x-sentinel-csrf"
+
+# Purposes a request may be bound to (ABAC). Anything else is treated as "no purpose", which can
+# only ever resolve to the caller's baseline masking - never to more access.
+PURPOSES = {
+    "CUSTOMER_SUPPORT": "Customer inbound support",
+    "FRAUD_INVESTIGATION": "Fraud triage / investigation",
+    "DISPUTE_RESOLUTION": "Transaction dispute resolution",
+    "ANALYTICS_REPORTING": "Analytics and reporting",
+    "SECURITY_AUDIT": "Security / compliance audit",
+}
+PURPOSE_HEADER = "x-dreamguard-purpose"
+TICKET_HEADER = "x-dreamguard-ticket-id"
+_TICKET_RE = re.compile(r"^[A-Z][A-Z0-9]{1,15}-\d{1,12}$")  # INC-8821, TICKET-10492, SR2-77
 
 
 def hash_password(password: str) -> str:
@@ -98,6 +112,45 @@ def decrypt_secret(value: str) -> str:
 
 # ---- request identity ------------------------------------------------------------------
 
+@dataclass(frozen=True)
+class AccessContext:
+    """ABAC attributes of one request. `purpose` and `ticket_id` are the caller's attestation:
+    they are format-checked here and recorded in the audit chain, not verified against a
+    ticketing system. `rejected` names attributes that were supplied but invalid."""
+
+    purpose: str | None = None
+    ticket_id: str | None = None
+    ip_address: str | None = None
+    at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    rejected: tuple[str, ...] = ()
+
+    def as_audit(self) -> dict:
+        return {
+            "purpose": self.purpose,
+            "ticket_id": self.ticket_id,
+            "ip_address": self.ip_address,
+            "evaluated_at_utc": self.at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "rejected_attributes": list(self.rejected),
+        }
+
+
+def normalise_purpose(raw: str | None) -> str | None:
+    v = (raw or "").strip().upper()
+    return v if v in PURPOSES else None
+
+
+def normalise_ticket(raw: str | None) -> str | None:
+    v = (raw or "").strip().upper()
+    return v if _TICKET_RE.match(v) else None
+
+
+def access_context(request: Request) -> AccessContext:
+    raw_purpose, raw_ticket = request.headers.get(PURPOSE_HEADER, "").strip(), request.headers.get(TICKET_HEADER, "").strip()
+    purpose, ticket = normalise_purpose(raw_purpose), normalise_ticket(raw_ticket)
+    rejected = tuple(name for name, raw, ok in (("purpose", raw_purpose, purpose), ("ticket_id", raw_ticket, ticket)) if raw and not ok)
+    return AccessContext(purpose, ticket, request.client.host if request.client else None, rejected=rejected)
+
+
 @dataclass
 class Principal:
     user_id: str
@@ -105,6 +158,7 @@ class Principal:
     display_name: str
     role: str
     permissions: set[str] = field(default_factory=set)
+    context: AccessContext = field(default_factory=AccessContext)
 
     def can(self, perm: str) -> bool:
         return perm in self.permissions
@@ -146,6 +200,7 @@ def current_principal(request: Request, db: Session = Depends(get_db)) -> Princi
     principal = resolve_principal(db, token)
     if principal is None:
         raise HTTPException(status_code=401, detail="Session expired or invalid")
+    principal.context = access_context(request)
     request.state.principal = principal
     return principal
 

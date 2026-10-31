@@ -44,6 +44,23 @@ class Role(Base):
     permissions: Mapped[list[str]] = mapped_column(JSON, default=list)
 
 
+class IdentityProvider(Base):
+    """An external identity provider users may federate from (OIDC, or the offline mock)."""
+
+    __tablename__ = "identity_providers"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    name: Mapped[str] = mapped_column(String(128))
+    issuer_url: Mapped[str] = mapped_column(String(512))
+    client_id: Mapped[str] = mapped_column(String(255))
+    client_secret_enc: Mapped[str | None] = mapped_column(Text, nullable=True)  # Fernet-encrypted
+    idp_type: Mapped[str] = mapped_column(String(16))  # OIDC | MOCK_SAML
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Role for federated users whose groups map to nothing; empty = refuse them (fail closed).
+    default_role: Mapped[str] = mapped_column(String(32), default="")
+    group_role_map: Mapped[dict[str, str]] = mapped_column(JSON, default=dict)  # IdP group -> role
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+
 class User(Base):
     __tablename__ = "users"
     id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
@@ -53,6 +70,24 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(32), ForeignKey("roles.name"))
     active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    # Federation binding: set for users who sign in through an IdP or were provisioned by SCIM.
+    idp_id: Mapped[str | None] = mapped_column(String(32), ForeignKey("identity_providers.id"), nullable=True)
+    external_sub: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+
+class SCIMToken(Base):
+    """Bearer credential for an IdP's SCIM client. Only the SHA-256 of the token is stored."""
+
+    __tablename__ = "scim_tokens"
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    description: Mapped[str] = mapped_column(String(128), default="")
+    # Users created through this token are bound to this IdP; the token can manage no others.
+    idp_id: Mapped[str] = mapped_column(String(32), ForeignKey("identity_providers.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class AuthSession(Base):
@@ -198,6 +233,12 @@ class Policy(Base):
     description: Mapped[str] = mapped_column(String(255), default="")
     updated_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    # ABAC grant conditions (all optional). A policy with conditions only takes effect while
+    # every condition holds for the request; see policy.py for the fallback rule.
+    allowed_purposes: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    require_ticket_id: Mapped[bool] = mapped_column(Boolean, default=False)
+    time_window_start: Mapped[str | None] = mapped_column(String(5), nullable=True)  # "HH:MM" UTC
+    time_window_end: Mapped[str | None] = mapped_column(String(5), nullable=True)
 
 
 class PolicyVersion(Base):
@@ -286,6 +327,30 @@ def _install_audit_guards(conn) -> None:
     )
 
 
+# Columns added after the first release. create_all() only creates missing tables, so metadata
+# DBs from earlier versions get these through ALTER TABLE (SQLite can only ADD COLUMN).
+_ADDED_COLUMNS = {
+    "users": {
+        "idp_id": "VARCHAR(32) REFERENCES identity_providers(id)",
+        "external_sub": "VARCHAR(255)",
+    },
+    "policies": {
+        "allowed_purposes": "JSON",
+        "require_ticket_id": "BOOLEAN NOT NULL DEFAULT 0",
+        "time_window_start": "VARCHAR(5)",
+        "time_window_end": "VARCHAR(5)",
+    },
+}
+
+
+def _migrate_columns(conn) -> None:
+    for table, cols in _ADDED_COLUMNS.items():
+        have = {row[1] for row in conn.execute(text(f"PRAGMA table_info({table})"))}
+        for name, ddl in cols.items():
+            if name not in have:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {name} {ddl}"))
+
+
 def get_engine():
     global _engine, _SessionLocal
     if _engine is None:
@@ -308,7 +373,10 @@ def get_engine():
 
         Base.metadata.create_all(_engine)
         with _engine.begin() as conn:
+            _migrate_columns(conn)
             _install_audit_guards(conn)
+            # One local account per federated identity (NULLs never collide in SQLite unique indexes).
+            conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_users_idp_sub ON users (idp_id, external_sub)"))
             # Audit filters/facets and the per-user activity stream; the table grows with every query.
             # IF NOT EXISTS also upgrades metadata DBs created before these indexes existed.
             for col in ("actor_name", "action", "role", "ts"):

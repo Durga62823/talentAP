@@ -65,6 +65,10 @@ def record(
     details: dict[str, Any] | None = None,
     actor_name: str | None = None,
 ) -> AuditEvent:
+    ctx = getattr(principal, "context", None)
+    if ctx is not None and (ctx.purpose or ctx.ticket_id or ctx.rejected):
+        # Purpose-bound request: the attestation becomes part of the hashed payload.
+        details = (details or {}) | {"access_context": ctx.as_audit()}
     with _lock:
         last = db.execute(
             select(AuditEvent.seq, AuditEvent.entry_hash).order_by(AuditEvent.seq.desc()).limit(1)

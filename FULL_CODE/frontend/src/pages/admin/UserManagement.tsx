@@ -1,11 +1,117 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Minus, Search, UserPlus } from "lucide-react";
+import { Check, Copy, KeyRound, Minus, RefreshCcw, Search, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Badge, Button, Card, ErrorText, Modal, PageHeader, Spinner } from "../../components/ui";
+import { Alert, Badge, Button, Card, ErrorText, Modal, PageHeader, Spinner } from "../../components/ui";
 import { RoleChip } from "../../components/Layout";
-import { api } from "../../lib/api";
+import { API_BASE, api, fmtTime, type ScimToken, type ScimTokenCreated, type SsoProvider } from "../../lib/api";
 import { useAuth } from "../../lib/auth";
 import { useConnections } from "../../lib/connections";
+
+const TOKEN_TONE: Record<ScimToken["status"], string> = { active: "green", expired: "amber", revoked: "neutral" };
+
+function DirectorySync() {
+  const qc = useQueryClient();
+  const providers = useQuery({ queryKey: ["sso-providers"], queryFn: () => api<SsoProvider[]>("/api/auth/sso/providers") });
+  const tokens = useQuery({ queryKey: ["scim-tokens"], queryFn: () => api<ScimToken[]>("/api/scim/tokens") });
+  const [f, setF] = useState({ description: "", idp_id: "", expires_in_days: 90 });
+  const [created, setCreated] = useState<ScimTokenCreated | null>(null);
+  const [copied, setCopied] = useState(false);
+  const idpId = f.idp_id || providers.data?.[0]?.id || "";
+  const scimUrl = `${API_BASE || window.location.origin}/api/scim/v2`;
+
+  const create = useMutation({
+    mutationFn: () => api<ScimTokenCreated>("/api/scim/tokens", { body: { ...f, idp_id: idpId } }),
+    onSuccess: (t) => {
+      setCreated(t);
+      setCopied(false);
+      setF({ ...f, description: "" });
+      qc.invalidateQueries({ queryKey: ["scim-tokens"] });
+    },
+  });
+  const revoke = useMutation({
+    mutationFn: (id: string) => api(`/api/scim/tokens/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["scim-tokens"] }),
+  });
+
+  return (
+    <div className="space-y-4 text-xs">
+      <p className="text-[#64748B] leading-relaxed">
+        Your identity provider (Entra ID, Okta, …) pushes joiners, movers and leavers to DreamGuard over SCIM 2.0. Each token is bound to one
+        identity provider and can only see or change that provider's users — local accounts, including break-glass administrators, are invisible to it.
+      </p>
+      <div className="rounded-lg border border-[#DCE5F0] bg-[#F4F8FD] p-3">
+        <div className="label">SCIM base URL</div>
+        <code className="block break-all font-mono text-[11px] text-[#123B67]">{scimUrl}</code>
+      </div>
+
+      <form
+        className="grid gap-2.5 sm:grid-cols-[1.4fr_1fr_0.8fr_auto] sm:items-end"
+        onSubmit={(e) => {
+          e.preventDefault();
+          create.mutate();
+        }}
+      >
+        <div>
+          <label className="label">Description</label>
+          <input className="input" required minLength={3} maxLength={128} placeholder="e.g. Entra ID provisioning" value={f.description}
+                 onChange={(e) => setF({ ...f, description: e.target.value })} />
+        </div>
+        <div>
+          <label className="label">Identity provider</label>
+          <select className="input" value={idpId} onChange={(e) => setF({ ...f, idp_id: e.target.value })}>
+            {providers.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="label">Expires in</label>
+          <select className="input" value={f.expires_in_days} onChange={(e) => setF({ ...f, expires_in_days: Number(e.target.value) })}>
+            {[30, 90, 180, 365].map((d) => <option key={d} value={d}>{d} days</option>)}
+          </select>
+        </div>
+        <Button variant="primary" type="submit" loading={create.isPending} disabled={!idpId} icon={<KeyRound className="h-4 w-4" />}>Generate</Button>
+      </form>
+      <ErrorText error={create.error} />
+
+      {created && (
+        <Alert tone="warn" title="Copy this token now — it is shown only once">
+          <div className="mt-1 flex items-center gap-2">
+            <code className="min-w-0 flex-1 break-all rounded border border-amber-200 bg-white px-2 py-1 font-mono text-[11px] text-[#172B45]">{created.token}</code>
+            <Button size="sm" icon={<Copy className="h-3.5 w-3.5" />} onClick={() => navigator.clipboard?.writeText(created.token).then(() => setCopied(true))}>
+              {copied ? "Copied" : "Copy"}
+            </Button>
+          </div>
+          <div className="mt-1 text-[11px]">DreamGuard stores only its SHA-256. Paste it as the bearer secret in your IdP's provisioning settings.</div>
+        </Alert>
+      )}
+
+      <div className="overflow-x-auto rounded-lg border border-[#DCE5F0]">
+        {tokens.isLoading ? <Spinner /> : tokens.error ? <ErrorText error={tokens.error} /> : !tokens.data?.length ? (
+          <p className="p-3 text-[#64748B]">No SCIM tokens yet.</p>
+        ) : (
+          <table className="w-full min-w-[560px] text-xs">
+            <thead><tr><th className="th">Token</th><th className="th">Identity provider</th><th className="th">Expires</th><th className="th">Last sync</th><th className="th">Status</th><th className="th" /></tr></thead>
+            <tbody>
+              {tokens.data.map((t) => (
+                <tr key={t.id} className="hover:bg-[#F4F8FD]">
+                  <td className="td font-medium text-[#172B45]">{t.description}<div className="font-mono text-[10px] text-[#64748B]">{t.id.slice(0, 8)}</div></td>
+                  <td className="td text-[#64748B]">{t.idp_name ?? t.idp_id}</td>
+                  <td className="td text-[#64748B]">{fmtTime(t.expires_at)}</td>
+                  <td className="td text-[#64748B]">{t.last_used_at ? fmtTime(t.last_used_at) : "never"}</td>
+                  <td className="td"><Badge tone={TOKEN_TONE[t.status]}>{t.status}</Badge></td>
+                  <td className="td text-right">
+                    {t.status === "active" && (
+                      <Button size="sm" variant="danger" loading={revoke.isPending && revoke.variables === t.id} onClick={() => revoke.mutate(t.id)}>Revoke</Button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function Grants() {
   const qc = useQueryClient();
@@ -94,6 +200,7 @@ export default function UserManagement() {
   const users = useQuery({ queryKey: ["users"], queryFn: () => api<any[]>("/api/users") });
   const roles = useQuery({ queryKey: ["roles"], queryFn: () => api("/api/roles") });
   const [adding, setAdding] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [f, setF] = useState({ username: "", display_name: "", role: "support", password: "" });
@@ -141,9 +248,14 @@ export default function UserManagement() {
         title="User & Access Governance"
         description="Manage authenticated user identities, role assignments, database table grant matrices, and security privileges."
         actions={
-          <Button variant="primary" icon={<UserPlus className="h-4 w-4" />} onClick={() => setAdding(true)}>
-            Add New User
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button icon={<RefreshCcw className="h-4 w-4" />} onClick={() => setSyncing(true)}>
+              Directory Sync (SCIM)
+            </Button>
+            <Button variant="primary" icon={<UserPlus className="h-4 w-4" />} onClick={() => setAdding(true)}>
+              Add New User
+            </Button>
+          </div>
         }
       />
 
@@ -198,12 +310,19 @@ export default function UserManagement() {
               </thead>
               <tbody className="divide-y divide-[#DCE5F0] text-[#172B45]">
                 {filteredUsers.map((u) => {
-                  const email = emailMap[u.username] || `${u.username}@saffronbank.example`;
+                  const email = emailMap[u.username] || (u.username.includes("@") ? u.username : `${u.username}@saffronbank.example`);
                   return (
                     <tr key={u.id} className="transition-colors hover:bg-[#F4F8FD]">
                       <td className="py-3 px-3">
                         <div className="font-semibold text-[#172B45]">{u.display_name}</div>
                         <div className="font-mono text-[11px] text-[#64748B]">@{u.username}</div>
+                        {u.federated ? (
+                          <Badge tone="violet" className="mt-1 text-[10px]" title="Signs in through the identity provider; role synced from directory groups">
+                            SSO · {u.idp_name ?? u.idp_id}{u.idp_linked ? "" : " · awaiting first sign-in"}
+                          </Badge>
+                        ) : (
+                          <Badge tone="neutral" className="mt-1 text-[10px]">Local account</Badge>
+                        )}
                       </td>
                       <td className="py-3 px-3 font-mono text-[#64748B]">
                         {email}
@@ -288,6 +407,10 @@ export default function UserManagement() {
           <Grants />
         </Card>
       </div>
+
+      <Modal open={syncing} title="Directory Sync · SCIM 2.0 provisioning tokens" onClose={() => setSyncing(false)} wide>
+        {syncing && <DirectorySync />}
+      </Modal>
 
       {/* Add User Modal */}
       {adding && (

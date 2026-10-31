@@ -13,23 +13,27 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { MaskBadge, PurposeBanner, decisionOf } from "../../components/PurposeBinding";
 import { Badge, Button, Card, Spinner } from "../../components/ui";
 import { apiAllowDenied } from "../../lib/api";
 import { useConnections } from "../../lib/connections";
+import { purposeHeaders, usePurposeBinding } from "../../lib/purpose";
 
 export default function CustomerProfiles() {
   const { selected } = useConnections();
+  const binding = usePurposeBinding();
   const [searchParams, setSearchParams] = useSearchParams();
   const cif = searchParams.get("id") || "CIF-00UKL72D";
   const [switchVal, setSwitchVal] = useState(cif);
 
   // 1. Customer Personal & Contact Record
   const customerQ = useQuery({
-    queryKey: ["customer-profile-main", selected?.id, cif],
+    queryKey: ["customer-profile-main", selected?.id, cif, binding.purpose, binding.ticketId],
     queryFn: async () => {
       if (!selected?.id || !cif) return null;
       const cleanCif = cif.replace(/['"\\]/g, "");
       const res = await apiAllowDenied("/api/query/execute", {
+        headers: purposeHeaders(binding),
         body: {
           connection_id: selected.id,
           sql: `SELECT customer_id, cust_nm, gender, dob_dt, mob_no, emailid, addr_line1, city, state, pincode, segment, risk_cat, preferred_lang, customer_since FROM customers WHERE customer_id = '${cleanCif}' LIMIT 1`,
@@ -42,11 +46,12 @@ export default function CustomerProfiles() {
 
   // 2. Linked Accounts
   const accountsQ = useQuery({
-    queryKey: ["customer-profile-accounts", selected?.id, cif],
+    queryKey: ["customer-profile-accounts", selected?.id, cif, binding.purpose, binding.ticketId],
     queryFn: async () => {
       if (!selected?.id || !cif) return null;
       const cleanCif = cif.replace(/['"\\]/g, "");
       const res = await apiAllowDenied("/api/query/execute", {
+        headers: purposeHeaders(binding),
         body: {
           connection_id: selected.id,
           sql: `SELECT account_no, branch_code, acct_type, curr_bal, open_dt, acct_status FROM accounts WHERE customer_id = '${cleanCif}'`,
@@ -59,11 +64,12 @@ export default function CustomerProfiles() {
 
   // 3. Linked Cards
   const cardsQ = useQuery({
-    queryKey: ["customer-profile-cards", selected?.id, cif],
+    queryKey: ["customer-profile-cards", selected?.id, cif, binding.purpose, binding.ticketId],
     queryFn: async () => {
       if (!selected?.id || !cif) return null;
       const cleanCif = cif.replace(/['"\\]/g, "");
       const res = await apiAllowDenied("/api/query/execute", {
+        headers: purposeHeaders(binding),
         body: {
           connection_id: selected.id,
           sql: `SELECT CARD_REF, CARD_NO, CARD_NETWORK, CARD_TYPE, NAME_ON_CARD, CREDIT_LIMIT, CARD_STATUS, ISSUED_ON FROM cards WHERE CUSTOMER_ID = '${cleanCif}'`,
@@ -76,11 +82,12 @@ export default function CustomerProfiles() {
 
   // 4. Customer Support Tickets History
   const ticketsQ = useQuery({
-    queryKey: ["customer-profile-tickets", selected?.id, cif],
+    queryKey: ["customer-profile-tickets", selected?.id, cif, binding.purpose, binding.ticketId],
     queryFn: async () => {
       if (!selected?.id || !cif) return null;
       const cleanCif = cif.replace(/['"\\]/g, "");
       const res = await apiAllowDenied("/api/query/execute", {
+        headers: purposeHeaders(binding),
         body: {
           connection_id: selected.id,
           sql: `SELECT ticket_id, channel, category, priority, status, created_ts, ticket_text FROM support_tickets WHERE customer_id = '${cleanCif}' ORDER BY ticket_id DESC LIMIT 10`,
@@ -132,6 +139,10 @@ export default function CustomerProfiles() {
         </form>
       </div>
 
+      <PurposeBanner
+        results={[customerQ, accountsQ, cardsQ, ticketsQ].map((x) => (x.data?.ok ? x.data.body.access_context : null))}
+      />
+
       {customerQ.isLoading ? (
         <Card>
           <div className="py-12">
@@ -162,7 +173,7 @@ export default function CustomerProfiles() {
                     <span className="flex items-center gap-1.5 font-semibold text-[#172B45]">
                       <User className="h-3.5 w-3.5 text-[#1D5FA7]" /> Full Name
                     </span>
-                    <Badge tone="amber">Partially Masked</Badge>
+                    <MaskBadge d={decisionOf(customerQ.data?.body, "cust_nm")} />
                   </div>
                   <div className="mt-1 text-sm font-semibold text-[#172B45]">{custData[1]}</div>
                 </div>
@@ -172,7 +183,7 @@ export default function CustomerProfiles() {
                     <span className="flex items-center gap-1.5 font-semibold text-[#172B45]">
                       <Phone className="h-3.5 w-3.5 text-[#1D5FA7]" /> Mobile Number
                     </span>
-                    <Badge tone="amber">Partially Masked</Badge>
+                    <MaskBadge d={decisionOf(customerQ.data?.body, "mob_no")} />
                   </div>
                   <div className="mt-1 font-mono text-sm font-semibold text-[#172B45]">{custData[4]}</div>
                 </div>
@@ -182,7 +193,7 @@ export default function CustomerProfiles() {
                     <span className="flex items-center gap-1.5 font-semibold text-[#172B45]">
                       <Mail className="h-3.5 w-3.5 text-[#1D5FA7]" /> Email Address
                     </span>
-                    <Badge tone="amber">Partially Masked</Badge>
+                    <MaskBadge d={decisionOf(customerQ.data?.body, "emailid")} />
                   </div>
                   <div className="mt-1 text-sm font-semibold text-[#172B45]">{custData[5]}</div>
                 </div>
@@ -192,7 +203,7 @@ export default function CustomerProfiles() {
                     <span className="flex items-center gap-1.5 font-semibold text-[#172B45]">
                       <Calendar className="h-3.5 w-3.5 text-[#1D5FA7]" /> Date of Birth
                     </span>
-                    <Badge tone="cyan">Generalized</Badge>
+                    <MaskBadge d={decisionOf(customerQ.data?.body, "dob_dt")} />
                   </div>
                   <div className="mt-1 font-mono text-sm font-semibold text-[#172B45]">{custData[3] || "—"}</div>
                 </div>
@@ -202,7 +213,7 @@ export default function CustomerProfiles() {
                     <span className="flex items-center gap-1.5 font-semibold text-[#172B45]">
                       <MapPin className="h-3.5 w-3.5 text-[#1D5FA7]" /> Postal Address
                     </span>
-                    <Badge tone="amber">Partially Masked</Badge>
+                    <MaskBadge d={decisionOf(customerQ.data?.body, "addr_line1")} />
                   </div>
                   <div className="mt-1 text-sm font-medium text-[#172B45]">{custData[6]}</div>
                   <div className="mt-0.5 text-xs text-[#64748B]">
@@ -233,7 +244,7 @@ export default function CustomerProfiles() {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-sm font-bold text-[#172B45]">{acc[0]}</span>
-                            <Badge tone="green">Visible</Badge>
+                            <MaskBadge d={decisionOf(accountsQ.data?.body, "account_no")} />
                           </div>
                           <div className="text-xs text-[#64748B]">
                             Type: {acc[2]} · Branch: {acc[1]} · Opened: {acc[4]}
@@ -244,13 +255,13 @@ export default function CustomerProfiles() {
                       <div className="text-left sm:text-right">
                         <div className="text-xs text-[#64748B]">Running Balance</div>
                         <div className="mt-0.5 flex items-center justify-start sm:justify-end gap-1.5">
-                          <span className="font-mono text-xs font-semibold text-rose-700">
+                          <span className="font-mono text-xs font-semibold text-[#172B45]">
                             {acc[3] !== undefined && acc[3] !== null ? String(acc[3]) : "[REDACTED]"}
                           </span>
-                          <Badge tone="red">Redacted by Policy</Badge>
+                          <MaskBadge d={decisionOf(accountsQ.data?.body, "curr_bal")} />
                         </div>
                         <div className="text-[10px] text-[#64748B]">
-                          Policy #80: Support restricted from running balances
+                          {decisionOf(accountsQ.data?.body, "curr_bal")?.policy_name ?? "default policy"}
                         </div>
                       </div>
                     </div>
@@ -282,7 +293,7 @@ export default function CustomerProfiles() {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-sm font-bold text-[#123B67]">{card[1]}</span>
-                            <Badge tone="amber">Partially Masked</Badge>
+                            <MaskBadge d={decisionOf(cardsQ.data?.body, "CARD_NO")} />
                           </div>
                           <div className="text-xs text-[#64748B]">
                             {card[2]} {card[3]} · Name: {card[4]} · Issued: {card[7] || "—"}
@@ -296,10 +307,10 @@ export default function CustomerProfiles() {
                           <span className="font-mono text-sm font-semibold text-emerald-700">
                             {card[5] ? `₹${Number(card[5]).toLocaleString()}` : "—"}
                           </span>
-                          <Badge tone="green">Allowed</Badge>
+                          <MaskBadge d={decisionOf(cardsQ.data?.body, "CREDIT_LIMIT")} />
                         </div>
                         <div className="text-[10px] text-[#64748B]">
-                          Policy #79: Support permitted to quote credit limit
+                          {decisionOf(cardsQ.data?.body, "CREDIT_LIMIT")?.policy_name ?? "default policy"}
                         </div>
                       </div>
                     </div>

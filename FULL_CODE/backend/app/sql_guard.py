@@ -73,6 +73,7 @@ class OutputColumn:
             "policy_id": self.decision.policy_id if self.decision else None,
             "policy_name": self.decision.policy_name if self.decision else None,
             "reason": self.decision.reason if self.decision else "aggregate over permitted input",
+            "abac_granted": self.decision.abac_granted if self.decision else False,
         }
 
 

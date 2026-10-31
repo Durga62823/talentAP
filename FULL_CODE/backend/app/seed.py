@@ -20,6 +20,7 @@ from .connectors import clear_adapters, get_adapter
 from .discovery import scan_connection
 from .metadb import Base, DbConnection, Policy, PolicyVersion, Role, SessionLocal, TableGrant, User, get_engine, reset_engine
 from .security import PERMISSIONS, encrypt_secret, hash_password
+from .sso import ensure_identity_providers
 
 log = logging.getLogger("sentinelmask.seed")
 
@@ -81,12 +82,23 @@ COLUMN_POLICIES = [
     ("support", "transactions", "bal_after", "REDACT", "Running balances are not needed for support"),
 ]
 
+# Purpose-bound elevations (ABAC). Same scope as the support category defaults, higher priority,
+# so they win only while the request carries a permitted purpose and a ticket id; otherwise the
+# baseline above applies. Card numbers are deliberately absent: PAN stays masked for support
+# whatever the purpose (PCI-DSS 3.4.1).
+ABAC_POLICIES = [
+    ("support", "PHONE", "ALLOW", ["CUSTOMER_SUPPORT", "FRAUD_INVESTIGATION"], "Verified call-back on a logged ticket"),
+    ("support", "EMAIL", "ALLOW", ["FRAUD_INVESTIGATION"], "Fraud triage may contact the customer directly"),
+    ("support", "FINANCIAL_AMOUNT", "ALLOW", ["DISPUTE_RESOLUTION", "FRAUD_INVESTIGATION"], "Exact amounts to settle a dispute"),
+]
+
 
 def snapshot(p: Policy) -> dict:
     return {
         k: getattr(p, k)
         for k in ("name", "role", "connection_id", "schema_name", "table_name", "column_name", "category",
-                  "sensitivity", "action", "priority", "active", "version", "description")
+                  "sensitivity", "action", "priority", "active", "version", "description",
+                  "allowed_purposes", "require_ticket_id", "time_window_start", "time_window_end")
     }
 
 
@@ -129,6 +141,9 @@ def seed_policies(db: Session) -> None:
     for role, table, column, action, desc in COLUMN_POLICIES:
         add_policy(db, Policy(name=f"{role}: {table}.{column}", role=role, table_name=table, column_name=column,
                               action=action, priority=10, description=desc))
+    for role, category, action, purposes, desc in ABAC_POLICIES:
+        add_policy(db, Policy(name=f"{role}: {category.lower().replace('_', ' ')} (purpose-bound)", role=role, category=category,
+                              action=action, priority=50, description=desc, allowed_purposes=purposes, require_ticket_id=True))
     db.commit()
 
 
@@ -226,6 +241,7 @@ def reset_all(with_external: bool = True) -> dict:
     try:
         seed_roles_and_users(db)
         seed_policies(db)
+        ensure_identity_providers(db)
         conn = DbConnection(name="Saffron Bank (SQLite)", kind="sqlite", params={"file": saffron.SQLITE_TARGET},
                             allowed_schemas=["main"], status="healthy", status_detail="connected")
         db.add(conn)

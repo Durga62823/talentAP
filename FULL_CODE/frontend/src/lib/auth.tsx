@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ApiError, api } from "./api";
+import { clearPurposeBinding } from "./purpose";
 
 export type User = { id: string; username: string; display_name: string; role: string; permissions: string[] };
 
@@ -54,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await api("/api/auth/logout", { method: "POST" });
     } finally {
       if (typeof localStorage !== "undefined") localStorage.removeItem("sm_token");
+      clearPurposeBinding();
       qc.clear();
       setUser(null);
     }
