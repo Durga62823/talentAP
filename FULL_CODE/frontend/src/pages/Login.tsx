@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Building2, ChevronDown, KeyRound, Lock, User } from "lucide-react";
+import { ArrowRight, Building2, ChevronDown, Lock, User } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { Alert } from "../components/ui";
